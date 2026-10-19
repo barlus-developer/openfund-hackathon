@@ -1,0 +1,9 @@
+node_modules/
+app/dist/
+app/src/web3/generated/
+contracts/lib/
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+docs/CONTRACTS.md
+package-lock.json

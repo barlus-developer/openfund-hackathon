@@ -1,0 +1,360 @@
+import { test, expect, type Page } from "@playwright/test";
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  encodeAbiParameters,
+  keccak256,
+  stringToHex,
+  parseEther,
+  decodeEventLog,
+  zeroHash,
+} from "viem";
+import { anvil } from "viem/chains";
+import { readFileSync } from "node:fs";
+const d = JSON.parse(readFileSync("deployments/official.json", "utf8")).find(
+  (entry: { version: string }) => entry.version === "local-v1",
+);
+const abi = JSON.parse(
+  readFileSync("contracts/out/OpenFund.sol/OpenFund.json", "utf8"),
+).abi;
+const tokenAbi = JSON.parse(
+  readFileSync("contracts/out/OFLToken.sol/OFLToken.json", "utf8"),
+).abi;
+const rpc = "http://127.0.0.1:8545";
+const client = createPublicClient({ chain: anvil, transport: http(rpc) });
+const accounts = [
+  "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+] as const;
+let snapshot: `0x${string}`;
+test.beforeEach(async () => {
+  expect(await client.getChainId()).toBe(31337);
+  snapshot = await client.request({ method: "evm_snapshot" } as never);
+});
+test.afterEach(async () => {
+  await client.request({ method: "evm_revert", params: [snapshot] } as never);
+});
+async function harness(page: Page) {
+  await page.addInitScript(
+    ({ rpc, accounts }) => {
+      localStorage.setItem("ofl-language", "en");
+      localStorage.removeItem("ofl-draft-v1");
+      let connected = sessionStorage.getItem("test-connected") === "1",
+        selected = accounts[0];
+      const sent: string[] = [];
+      const listeners = new Map<string, Set<(...v: unknown[]) => void>>();
+      const provider = {
+        isMetaMask: false,
+        on: (event: string, fn: (...v: unknown[]) => void) => {
+          if (!listeners.has(event)) listeners.set(event, new Set());
+          listeners.get(event)!.add(fn);
+        },
+        removeListener: (event: string, fn: (...v: unknown[]) => void) =>
+          listeners.get(event)?.delete(fn),
+        request: async ({
+          method,
+          params = [],
+        }: {
+          method: string;
+          params?: unknown[];
+        }) => {
+          if (method === "eth_requestAccounts") {
+            connected = true;
+            sessionStorage.setItem("test-connected", "1");
+            return [selected];
+          }
+          if (method === "eth_accounts") return connected ? [selected] : [];
+          if (method === "wallet_requestPermissions") {
+            connected = true;
+            sessionStorage.setItem("test-connected", "1");
+            return [{ parentCapability: "eth_accounts" }];
+          }
+          if (method === "wallet_getPermissions")
+            return connected ? [{ parentCapability: "eth_accounts" }] : [];
+          if (method === "wallet_revokePermissions") {
+            connected = false;
+            return null;
+          }
+          if (
+            method === "wallet_switchEthereumChain" ||
+            method === "wallet_addEthereumChain"
+          )
+            return null;
+          if (method === "eth_sendTransaction") sent.push(method);
+          const result = await fetch(rpc, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+          }).then((r) => r.json());
+          if (result.error)
+            throw Object.assign(Error(result.error.message), result.error);
+          return result.result;
+        },
+      };
+      Object.assign(window, {
+        testProvider: provider,
+        testWallet: {
+          sent,
+          select: (i: number) => {
+            selected = accounts[i];
+            listeners.get("accountsChanged")?.forEach((fn) => fn([selected]));
+          },
+        },
+      });
+    },
+    { rpc, accounts: [...accounts] },
+  );
+  await page.goto("/e2e.html");
+  await page
+    .getByRole("button", { name: "Connect MetaMask", exact: true })
+    .click();
+  await expect(page.getByText("0xf39F…2266", { exact: true })).toBeVisible();
+}
+test("public routes and mobile navigation read actual seeded chain state", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/");
+  await expect(
+    page.getByText("Learning together · Vientiane", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "EN", exact: true }).click();
+  for (const path of [
+    "/funds",
+    "/funds/local-v1/3",
+    "/funds/local-v1/3/donate",
+    "/funds/local-v1/3/governance",
+    "/funds/local-v1/3/proposals/1",
+    "/funds/local-v1/3/transactions",
+    "/funds/local-v1/3/payouts",
+    "/funds/local-v1/3/reports",
+    "/funds/local-v1/3/manage",
+    "/wallet",
+    "/dashboard/refunds",
+    "/protocol",
+    "/about",
+    "/transactions",
+  ]) {
+    await page.goto("/#" + path);
+    await expect(page.locator("main")).not.toBeEmpty();
+    await expect(
+      page.getByText("RPC / transaction error", { exact: true }),
+    ).toHaveCount(0);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    page.getByRole("button", { name: "Connect MetaMask", exact: true }),
+  ).toBeVisible();
+  await page.goto("/");
+  await page.getByRole("button", { name: "Toggle navigation" }).click();
+  await page
+    .getByRole("navigation", { name: "Main navigation" })
+    .getByRole("link", { name: "Explore funds" })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Explore funds", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  expect(errors).toEqual([]);
+});
+test("browser wallet harness creates, donates once, approves, pays, reports and closes", async ({
+  page,
+}) => {
+  await harness(page);
+  await page.goto("/e2e.html#/funds/create");
+  await page
+    .getByLabel("Fund title", { exact: true })
+    .fill("Browser verified education fund");
+  await page
+    .getByLabel("Public summary", { exact: true })
+    .fill("Real on-chain browser test, snapshot isolated.");
+  await page.getByLabel("Manager wallet", { exact: true }).fill(accounts[0]);
+  await page
+    .getByLabel(/Immutable purpose and terms/)
+    .fill("Public education supplies; no private beneficiary data.");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByLabel(/Funding mode/).selectOption("1");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByLabel(/Approvers \(one per line\)/).fill(accounts[0]);
+  await page.getByLabel(/Required approvals/).fill("1");
+  await page.getByLabel(/Immutable minimum threshold/).fill("1");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Create fund · MetaMask", exact: true })
+    .click();
+  await expect(page).toHaveURL(/funds\/local-v1\/\d+$/);
+  const fundId = BigInt(page.url().split("/").at(-1)!);
+  await expect(
+    page.getByRole("heading", { name: "Browser verified education fund" }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Donate", exact: true }).first().click();
+  await page
+    .getByLabel("OFL amount", { exact: true })
+    .fill("12.000000000000000001");
+  const countBefore = await page.evaluate(
+    () =>
+      (window as unknown as { testWallet: { sent: string[] } }).testWallet.sent
+        .length,
+  );
+  await page.getByRole("button", { name: /Donate 12/ }).click();
+  await expect(
+    page.getByText("Donation receipt", { exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { testWallet: { sent: string[] } }).testWallet
+          .sent.length,
+    ),
+  ).toBe(countBefore + 1);
+  await page.getByRole("link", { name: "Manage fund", exact: true }).click();
+  await page.getByLabel("Recipient address", { exact: true }).fill(accounts[1]);
+  await page
+    .getByLabel("OFL amount", { exact: true })
+    .fill("12.000000000000000001");
+  await page
+    .getByLabel("Purpose", { exact: true })
+    .fill("Public books purchase");
+  await page.getByRole("button", { name: /Submit proposal/ }).click();
+  await expect(page.getByText("Confirmed", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Proposals", exact: true }).click();
+  await page
+    .getByRole("link")
+    .filter({ hasText: "Public books purchase" })
+    .click();
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(page.getByText("EXECUTABLE", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Execute", exact: true }).click();
+  await expect(page.getByText("EXECUTED", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Reports", exact: true }).click();
+  await page.getByLabel(/Report title/).fill("Public books receipt");
+  await page
+    .getByLabel(/Content IPFS URI/)
+    .fill("https://example.invalid/test-only-public-report");
+  await page
+    .getByLabel("keccak256 of exact document bytes", { exact: true })
+    .fill(keccak256(stringToHex("Public test document")));
+  await page.getByRole("button", { name: /Publish reference/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Public books receipt", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Manage fund", exact: true }).click();
+  await page
+    .getByLabel("Closed action type", { exact: true })
+    .selectOption("7");
+  await page
+    .getByLabel("Purpose", { exact: true })
+    .fill("Completed education project");
+  await page.getByRole("button", { name: /Submit proposal/ }).click();
+  await expect(page.getByText("Confirmed", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Proposals", exact: true }).click();
+  await page
+    .getByRole("link")
+    .filter({ hasText: "Completed education project" })
+    .click();
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(page.getByText("TIMELOCKED", { exact: true })).toBeVisible();
+  await client.request({
+    method: "evm_increaseTime",
+    params: [86400],
+  } as never);
+  await client.request({ method: "evm_mine", params: [] } as never);
+  await page.reload();
+  await expect(page.getByText("EXECUTABLE", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Execute", exact: true }).click();
+  await expect(page.getByText("CLOSING", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Manage fund", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Finalize immutable closed archive",
+      exact: true,
+    })
+    .click();
+  await expect(page.getByText("CLOSED", { exact: true })).toBeVisible();
+  expect(
+    await client.readContract({
+      address: d.openFundAddress,
+      abi,
+      functionName: "getFundBalance",
+      args: [fundId],
+    }),
+  ).toBe(0n);
+});
+test("browser self-claims an expired targeted refund without approvals", async ({
+  page,
+}) => {
+  const wallet = createWalletClient({
+    account: accounts[0],
+    chain: anvil,
+    transport: http(rpc),
+  });
+  const p = {
+    fundingMode: 0,
+    underfundingPolicy: 0,
+    recipientPolicy: 0,
+    fundingGoal: parseEther("100"),
+    duration: 86400n,
+    threshold: 1,
+    minimumApprovalThreshold: 1,
+    termsHash: keccak256(stringToHex("Refund test terms")),
+    manager: accounts[0],
+    title: "Browser refund verification",
+    summary: "Snapshot-isolated refund test.",
+    category: "Healthcare",
+    metadataURI: "",
+    termsURI: "",
+  };
+  const hash = await wallet.writeContract({
+    address: d.openFundAddress,
+    abi,
+    functionName: "createFund",
+    args: [p, [accounts[0]], []],
+  });
+  const receipt = await client.waitForTransactionReceipt({ hash });
+  const event = receipt.logs
+    .map((l) => {
+      try {
+        return decodeEventLog({ abi, ...l });
+      } catch {
+        return null;
+      }
+    })
+    .find((e) => e?.eventName === "FundCreated");
+  const id = (event?.args as { fundId: bigint }).fundId;
+  const donation = await wallet.writeContract({
+    address: d.oflTokenAddress,
+    abi: tokenAbi,
+    functionName: "transferAndCall",
+    args: [
+      d.openFundAddress,
+      parseEther("5"),
+      encodeAbiParameters([{ type: "uint256" }], [id]),
+    ],
+  });
+  await client.waitForTransactionReceipt({ hash: donation });
+  await client.request({
+    method: "evm_increaseTime",
+    params: [86400],
+  } as never);
+  await client.request({ method: "evm_mine", params: [] } as never);
+  await harness(page);
+  await page.goto(`/e2e.html#/funds/local-v1/${id}`);
+  await expect(page.getByText("REFUNDABLE", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Claim refund", exact: true }).click();
+  await expect(page.getByText("Confirmed", { exact: true })).toBeVisible();
+  expect(
+    await client.readContract({
+      address: d.openFundAddress,
+      abi,
+      functionName: "getRefundableAmount",
+      args: [id, accounts[0]],
+    }),
+  ).toBe(0n);
+});

@@ -1,0 +1,14 @@
+node_modules/
+app/dist/
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+.env
+.env.local
+.env.*.local
+*.log
+.local/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo

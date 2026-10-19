@@ -1,0 +1,15 @@
+[
+  {
+    "chainId": 31337,
+    "version": "local-v1",
+    "name": "Local Development Network",
+    "openFundAddress": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+    "oflTokenAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+    "deploymentBlock": "2",
+    "deploymentBlockHash": "0x3e4d0cf2f57f73a387d4f5a7cbcc8bc63743308f5b3a953eb44c05efe61877b0",
+    "rpcUrls": [
+      "http://127.0.0.1:8545"
+    ],
+    "demoMode": true
+  }
+]
