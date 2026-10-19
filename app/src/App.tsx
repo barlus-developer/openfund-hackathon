@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from "react";
+import React, { lazy } from "react";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { WagmiProvider, type Config } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -20,11 +20,11 @@ import {
   FundPayouts,
   GlobalActivity,
 } from "./features/transparency/Activity";
-import { EmptyState, Loading } from "./components/common";
+import { EmptyState, ActionLink } from "./components/common";
 import { About } from "./pages/About";
 import { Protocol } from "./pages/Protocol";
 import "./styles/globals.css";
-import { Toaster } from "./components/ui/sonner";
+import { Toaster } from "./components/ui/toast";
 const CreateFund = lazy(() =>
   import("./features/funds/CreateFund").then((m) => ({
     default: m.CreateFund,
@@ -54,45 +54,45 @@ export function App({ walletConfig = config }: { walletConfig?: Config }) {
         <QueryClientProvider client={queryClient}>
           <LanguageProvider>
             <HashRouter>
-              <Suspense fallback={<Loading />}>
-                <Routes>
-                  <Route element={<Layout />}>
-                    <Route index element={<Home />} />
-                    <Route path="funds" element={<Explore />} />
-                    <Route path="funds/create" element={<CreateFund />} />
+              <Routes>
+                <Route element={<Layout />}>
+                  <Route index element={<Home />} />
+                  <Route path="funds" element={<Explore />} />
+                  <Route path="funds/create" element={<CreateFund />} />
+                  <Route path="funds/:version/:fundId" element={<FundLayout />}>
+                    <Route index element={<FundOverview />} />
+                    <Route path="donate" element={<Donate />} />
+                    <Route path="governance" element={<Governance />} />
+                    <Route path="proposals" element={<ProposalList />} />
                     <Route
-                      path="funds/:version/:fundId"
-                      element={<FundLayout />}
-                    >
-                      <Route index element={<FundOverview />} />
-                      <Route path="donate" element={<Donate />} />
-                      <Route path="governance" element={<Governance />} />
-                      <Route path="proposals" element={<ProposalList />} />
-                      <Route
-                        path="proposals/:proposalId"
-                        element={<ProposalDetail />}
-                      />
-                      <Route path="transactions" element={<FundActivity />} />
-                      <Route path="payouts" element={<FundPayouts />} />
-                      <Route path="reports" element={<Reports />} />
-                      <Route path="manage" element={<Manage />} />
-                    </Route>
-                    <Route path="dashboard" element={<Dashboard />} />
-                    <Route path="dashboard/:section" element={<Dashboard />} />
-                    <Route path="wallet" element={<Wallet />} />
-                    <Route path="transactions" element={<GlobalActivity />} />
-                    <Route path="protocol" element={<Protocol />} />
-                    <Route path="about" element={<About />} />
-                    <Route
-                      path="*"
-                      element={
-                        <EmptyState description="ບໍ່ພົບໜ້ານີ້. ກະລຸນາໃຊ້ເມນູເພື່ອຄົ້ນຫາກອງທຶນ." />
-                      }
+                      path="proposals/:proposalId"
+                      element={<ProposalDetail />}
                     />
+                    <Route path="transactions" element={<FundActivity />} />
+                    <Route path="payouts" element={<FundPayouts />} />
+                    <Route path="reports" element={<Reports />} />
+                    <Route path="manage" element={<Manage />} />
                   </Route>
-                </Routes>
-                <Toaster />
-              </Suspense>
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="dashboard/:section" element={<Dashboard />} />
+                  <Route path="wallet" element={<Wallet />} />
+                  <Route path="transactions" element={<GlobalActivity />} />
+                  <Route path="protocol" element={<Protocol />} />
+                  <Route path="about" element={<About />} />
+                  <Route
+                    path="*"
+                    element={
+                      <EmptyState
+                        description="ບໍ່ພົບໜ້ານີ້. ກະລຸນາໃຊ້ເມນູເພື່ອຄົ້ນຫາກອງທຶນ."
+                        action={
+                          <ActionLink to="/funds">ຄົ້ນຫາກອງທຶນ</ActionLink>
+                        }
+                      />
+                    }
+                  />
+                </Route>
+              </Routes>
+              <Toaster />
             </HashRouter>
           </LanguageProvider>
         </QueryClientProvider>

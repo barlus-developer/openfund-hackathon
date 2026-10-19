@@ -1,3 +1,11 @@
+import {
+  InputGroup,
+  InputGroupInput,
+  InputGroupAddon,
+  InputGroupText,
+} from "@/components/ui/input-group";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Disclosure } from "@/components/patterns";
 import { useState } from "react";
 import { useConnection } from "wagmi";
 import { decodeEventLog, encodeFunctionData, formatUnits } from "viem";
@@ -7,16 +15,13 @@ import { useBalances } from "@/web3/reads";
 import { tokenAbi } from "@/web3/generated/OFLToken";
 import { openFundAbi } from "@/web3/generated/OpenFund";
 import { useTransaction } from "@/hooks/useTransaction";
-import { amount, ofl, donationData } from "@/lib/amount";
+import { amount, ofl, formatOfl, donationData } from "@/lib/amount";
+import { Spinner } from "@/components/ui/spinner";
+import { ActionLink } from "@/components/common";
+import { FieldError } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
-import { FieldGroup } from "@/components/ui/field";
-import {
-  Panel,
-  Notice,
-  TextField,
-  ErrorNotice,
-  TxFeedback,
-} from "@/components/common";
+import { FieldGroup, Field, FieldLabel } from "@/components/ui/field";
+import { Panel, Notice, ErrorNotice, TxFeedback } from "@/components/common";
 import { Policy } from "@/features/funds/FundCard";
 import { Connect } from "@/features/wallet/Connect";
 import { useLanguage } from "@/app/i18n";
@@ -78,104 +83,143 @@ export function Donate() {
           "ຍັງບໍ່ພົບຫຼັກຖານການສະໜັບສະໜູນ. ກະລຸນາກວດໃບຢືນຢັນກ່ອນລອງໃໝ່.",
         );
       setReceipt(
-        `${ofl(event.args.amount)} OFL · ກອງທຶນ #${event.args.fundId} · ຜູ້ສະໜັບສະໜູນ ${event.args.donor}`,
+        `${formatOfl(event.args.amount)} OFL · ກອງທຶນ #${event.args.fundId} · ຜູ້ສະໜັບສະໜູນ ${event.args.donor}`,
       );
     } catch (e) {
       setError(e);
     }
   }
+  const amountError =
+    input && parsed === 0n
+      ? "ປ້ອນຈຳນວນ OFL ທີ່ຫຼາຍກວ່າ 0 (ສູງສຸດ 18 ທົດສະນິຍົມ)."
+      : parsed > 0n && row.fund.config.fundingMode === 0 && parsed > remaining
+        ? "ຈຳນວນນີ້ເກີນຍອດທີ່ກອງທຶນຍັງຕ້ອງການ."
+        : balances.data && parsed > balances.data.ofl
+          ? "ຍອດ OFL ໃນກະເປົາບໍ່ພຽງພໍ."
+          : "";
   return (
-    <div className="detail-grid">
-      <Panel
-        title={t("donate")}
-        description="ສະໜັບສະໜູນ OFL ໂດຍຢືນຢັນພຽງຄັ້ງດຽວ"
-      >
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
+      <Panel title={t("donate")}>
         <FieldGroup>
-          <Connect chainId={d.chainId} />
-          <Notice title="ເງື່ອນໄຂການສະໜັບສະໜູນຂອງເຈົ້າ">
+          <Field data-invalid={!!amountError}>
+            <FieldLabel htmlFor="donation-amount">{t("amount")}</FieldLabel>
+            <InputGroup>
+              <InputGroupInput
+                id="donation-amount"
+                inputMode="decimal"
+                placeholder="0"
+                value={input}
+                aria-invalid={!!amountError}
+                aria-describedby={amountError ? "amount-error" : undefined}
+                disabled={tx.busy}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  setError(undefined);
+                }}
+              />
+              <InputGroupAddon align="inline-end">
+                <InputGroupText>OFL</InputGroupText>
+              </InputGroupAddon>
+            </InputGroup>
+            {amountError ? (
+              <FieldError id="amount-error">{amountError}</FieldError>
+            ) : null}
+          </Field>
+          <ToggleGroup
+            aria-label="ເລືອກຈຳນວນສະໜັບສະໜູນ"
+            variant="outline"
+            disabled={tx.busy}
+            value={[input]}
+            onValueChange={(values) => {
+              if (values[0]) setInput(values[0]);
+            }}
+            className="flex-wrap"
+          >
+            {["100", "500", "1000"].map((value) => (
+              <ToggleGroupItem key={value} value={value}>
+                {value} OFL
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+          {row.fund.config.fundingMode === 0 && remaining > 0n ? (
+            <Button
+              variant="ghost"
+              disabled={tx.busy}
+              onClick={() => setInput(ofl(remaining))}
+            >
+              ຍອດທີ່ຍັງຕ້ອງການ: {formatOfl(remaining)} OFL
+            </Button>
+          ) : null}
+          {c.address ? (
+            <dl className="data-list text-sm">
+              <dt>ຍອດໃນກະເປົາ</dt>
+              <dd>{formatOfl(balances.data?.ofl)} OFL</dd>
+              <dt>ຍອດສຳລັບຄ່າທຳນຽມ</dt>
+              <dd>
+                {balances.data
+                  ? formatUnits(
+                      balances.data.native,
+                      chainFor(d).nativeCurrency.decimals,
+                    )
+                  : "—"}{" "}
+                {chainFor(d).nativeCurrency.symbol}
+              </dd>
+            </dl>
+          ) : null}
+          <Notice title="ເງື່ອນໄຂການສະໜັບສະໜູນ">
             <Policy row={row} />
           </Notice>
-          <TextField label={t("amount")} value={input} onChange={setInput} />
-          <div className="flex flex-wrap gap-2">
-            {["100", "500", "1000"].map((v) => (
-              <Button key={v} variant="outline" onClick={() => setInput(v)}>
-                {v} OFL
-              </Button>
-            ))}
-            {row.fund.config.fundingMode === 0 ? (
-              <Button
-                variant="outline"
-                onClick={() => setInput(ofl(remaining))}
-              >
-                {" "}
-                ຍອດທີ່ຍັງຕ້ອງການ: {ofl(remaining)}
-              </Button>
-            ) : null}
-          </div>
-          <p>
-            {" "}
-            ຍອດໃນກະເປົາ: {ofl(balances.data?.ofl)} OFL · ຍອດສຳລັບຄ່າທຳນຽມ:{" "}
-            {balances.data
-              ? formatUnits(
-                  balances.data.native,
-                  chainFor(d).nativeCurrency.decimals,
-                )
-              : "—"}{" "}
-            {chainFor(d).nativeCurrency.symbol}
+          <p className="text-xs text-muted-foreground">
+            OFL ທົດລອງບໍ່ສາມາດແລກເປັນເງິນກີບໄດ້. ມີຄ່າທຳນຽມເຄືອຂ່າຍ; ກວດສອບຍອດ
+            ແລະຄ່າທຳນຽມໃນ MetaMask ກ່ອນຢືນຢັນ.
           </p>
-          <details className="advanced-filters">
-            <summary>ເບິ່ງຂໍ້ມູນອ້າງອີງການໂອນ</summary>{" "}
-            <small>
-              {" "}
-              ກອງທຶນ # {row.id.toString()} · {d.version} · ເຄືອຂ່າຍ {d.chainId}
-              <code className="hash">{d.openFundAddress}</code> ທີ່ຢູ່ OFL
-              ຂອງລະບົບ <code className="hash">{d.oflTokenAddress}</code>
-            </small>
-          </details>
           <ErrorNotice error={error || balances.error} />
           {!accepts ? (
             <Notice title="ຢຸດຮັບສະໜັບສະໜູນແລ້ວ">
-              {" "}
-              ກອງທຶນນີ້ບໍ່ສາມາດຮັບສະໜັບສະໜູນເພີ່ມໄດ້ໃນຂະນະນີ້.{" "}
+              ກອງທຶນນີ້ບໍ່ຮັບສະໜັບສະໜູນເພີ່ມ.
             </Notice>
-          ) : null}
-          <Button
-            disabled={
-              !c.address ||
-              c.chainId !== d.chainId ||
-              tx.busy ||
-              !accepts ||
-              parsed === 0n
-            }
-            onClick={donate}
-          >
-            {t("donate")} {parsed ? `${ofl(parsed)} OFL` : ""} · MetaMask
-          </Button>
+          ) : !c.address || c.chainId !== d.chainId ? (
+            <Connect chainId={d.chainId} />
+          ) : (
+            <Button
+              size="lg"
+              disabled={tx.busy || parsed === 0n || !!amountError}
+              onClick={donate}
+            >
+              {tx.busy ? <Spinner data-icon="inline-start" /> : null}
+              {tx.busy ? (
+                "ກຳລັງດຳເນີນການ…"
+              ) : (
+                <>
+                  {t("donate")} {parsed ? `${formatOfl(parsed)} OFL` : ""}
+                </>
+              )}
+            </Button>
+          )}
           <TxFeedback state={tx.state} d={d} />
           {receipt ? (
-            <Notice title="ໃບຢືນຢັນການສະໜັບສະໜູນ">{receipt}</Notice>
+            <>
+              <Notice title="ໃບຢືນຢັນການສະໜັບສະໜູນ">{receipt}</Notice>
+              <ActionLink to="/dashboard/donations" outline>
+                ການສະໜັບສະໜູນຂອງຂ້ອຍ
+              </ActionLink>
+            </>
           ) : null}
+          <Disclosure title="ຂໍ້ມູນອ້າງອີງການໂອນ">
+            <dl className="data-list">
+              <dt>ກອງທຶນ</dt>
+              <dd>
+                #{row.id.toString()} · {d.version} · {d.chainId}
+                <code className="hash">{d.openFundAddress}</code>
+              </dd>
+              <dt>OFL</dt>
+              <dd>
+                <code className="hash">{d.oflTokenAddress}</code>
+              </dd>
+            </dl>
+          </Disclosure>
         </FieldGroup>
       </Panel>
-      <div className="stack">
-        <Panel title="ກ່ອນຢືນຢັນການສະໜັບສະໜູນ">
-          <p>
-            {" "}
-            ບໍ່ຕ້ອງອະນຸມັດການໃຊ້ OFL ແຍກຕ່າງຫາກ.
-            ຖ້າກອງທຶນບໍ່ສາມາດຮັບສະໜັບສະໜູນໄດ້ ການໂອນຈະບໍ່ສຳເລັດ.{" "}
-          </p>
-          <p>
-            {" "}
-            MetaMask ອາດຂໍໃຫ້ເຊື່ອມກະເປົາ ຫຼືປ່ຽນເຄືອຂ່າຍກ່ອນ. ຫຼັງຈາກນັ້ນ
-            ຢືນຢັນການສະໜັບສະໜູນພຽງຄັ້ງດຽວ.{" "}
-          </p>
-          <p>
-            {" "}
-            1 OFL ≈ 1 ກີບ ເປັນພຽງຄ່າອ້າງອີງ. OFL
-            ທົດລອງບໍ່ສາມາດແລກເປັນເງິນກີບໄດ້.{" "}
-          </p>
-        </Panel>
-      </div>
     </div>
   );
 }

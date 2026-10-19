@@ -216,6 +216,7 @@ test("browser wallet harness creates, donates once, approves, pays, reports and 
           .sent.length,
     ),
   ).toBe(countBefore + 1);
+  await page.getByRole("link", { name: "ກັບໄປກອງທຶນ", exact: true }).click();
   await page.getByRole("link", { name: "ຈັດການກອງທຶນ", exact: true }).click();
   await page.getByLabel("ທີ່ຢູ່ຜູ້ຮັບ", { exact: true }).fill(accounts[1]);
   await page

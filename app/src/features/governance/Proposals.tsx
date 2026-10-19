@@ -1,3 +1,4 @@
+import { Disclosure } from "@/components/patterns";
 import { actionLabels, proposalStatusLabels } from "@/app/labels";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -22,17 +23,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScanControls } from "@/features/transparency/Activity";
-import { ofl, date, positiveId } from "@/lib/amount";
+import { formatOfl, date, positiveId } from "@/lib/amount";
 import { Connect } from "@/features/wallet/Connect";
 import { useLanguage } from "@/app/i18n";
 export function Governance() {
   const { d, row } = useFundContext();
   return (
-    <div className="stack">
-      <Panel
-        title="ຜູ້ຮັບຜິດຊອບຂອງກອງທຶນ"
-        description="ບໍ່ມີຜູ້ດູແລລະບົບທີ່ປ່ຽນການຕັດສິນໃຈແທນກະເປົາເຫຼົ່ານີ້ໄດ້."
-      >
+    <div className="flex min-w-0 flex-col gap-6">
+      <Panel title="ຜູ້ຮັບຜິດຊອບຂອງກອງທຶນ">
         <dl className="data-list">
           <dt> ຜູ້ຈັດການ </dt>
           <dd>
@@ -42,12 +40,6 @@ export function Governance() {
           <dd>
             {row.fund.threshold} / {row.approvers.length} · ຂັ້ນຕ່ຳ{" "}
             {row.fund.config.minimumApprovalThreshold}
-          </dd>
-          <dt> ຮຸ່ນຂໍ້ມູນ </dt>
-          <dd>
-            {" "}
-            ການອະນຸມັດ {row.fund.governanceVersion.toString()} · ເງື່ອນໄຂຜູ້ຮັບ{" "}
-            {row.fund.recipientRulesVersion.toString()}
           </dd>
           <dt> ຜູ້ອະນຸມັດປັດຈຸບັນ </dt>
           <dd>
@@ -71,7 +63,6 @@ export function Governance() {
         ການປ່ຽນແປງສຳຄັນຕ້ອງລໍຖ້າ 24 ຊົ່ວໂມງ ແລະດຳເນີນການພາຍໃນ 7
         ວັນຫຼັງອະນຸມັດຄົບ. ຖ້າອະນຸມັດບໍ່ຄົບຈຳນວນ ເງິນອາດຖືກລັອກຖາວອນ.{" "}
       </Notice>
-      <ProposalList />
     </div>
   );
 }
@@ -101,7 +92,7 @@ export function ProposalList() {
   });
   return (
     <Panel title="ຂໍ້ສະເໜີ">
-      <div className="stack">
+      <div className="flex min-w-0 flex-col gap-6">
         <ScanControls q={q} />
         <small>
           {" "}
@@ -116,7 +107,7 @@ export function ProposalList() {
           results.map((r, i) =>
             r.data ? (
               <Link
-                className="activity-row"
+                className="flex min-w-0 flex-col justify-between gap-4 border-b py-5 last:border-0 sm:flex-row"
                 key={ids[i].toString()}
                 to={fundPath(d, row.id) + `/proposals/${ids[i]}`}
               >
@@ -196,31 +187,42 @@ function Detail({ id }: { id: bigint }) {
   );
   const hasFunds = p.action.kind !== 0 || p.action.amount <= row.fund.balance;
   return (
-    <div className="stack">
+    <div className="flex min-w-0 flex-col gap-6">
       <Panel
         title={`#${id} · ${actionLabels[p.action.kind]}`}
         description={proposalStatusLabels[s]}
       >
-        <div className="stack">
+        <div className="flex min-w-0 flex-col gap-6">
           <dl className="data-list">
             <dt> ຜູ້ສະເໜີ </dt>
             <dd>
               <code>{p.proposer}</code>
             </dd>
-            <dt> ຜູ້ຮັບ / ກະເປົາທີ່ກ່ຽວຂ້ອງ </dt>
-            <dd>
-              <code>{p.action.target}</code>
-            </dd>
-            <dt> ຈຳນວນ / ຈຳນວນອະນຸມັດ </dt>
-            <dd>
-              {ofl(p.action.amount)} OFL / {p.action.value}
-            </dd>
+            {![4, 7].includes(p.action.kind) ? (
+              <>
+                <dt>ຜູ້ຮັບ / ກະເປົາທີ່ກ່ຽວຂ້ອງ</dt>
+                <dd>
+                  <code>{p.action.target}</code>
+                </dd>
+              </>
+            ) : null}
+            {p.action.kind === 0 ? (
+              <>
+                <dt>ຈຳນວນ</dt>
+                <dd>{formatOfl(p.action.amount)} OFL</dd>
+              </>
+            ) : null}
+            {p.action.kind === 4 ? (
+              <>
+                <dt>ຈຳນວນອະນຸມັດໃໝ່</dt>
+                <dd>{p.action.value}</dd>
+              </>
+            ) : null}
             <dt> ຈຸດປະສົງ </dt>
             <dd>{p.action.purpose}</dd>
             <dt> ຫຼັກຖານປະກອບ </dt>
             <dd>
               <code>{p.action.evidenceURI || "ບໍ່ມີ"}</code>
-              <code className="hash">{p.action.evidenceHash}</code>
             </dd>
             <dt> ການອະນຸມັດ </dt>
             <dd>
@@ -234,65 +236,65 @@ function Detail({ id }: { id: bigint }) {
             <dd>
               {date(ready)} / {date(expiry)}
             </dd>
-            <dt> ຮຸ່ນຂໍ້ມູນ </dt>
-            <dd>
-              {" "}
-              ການອະນຸມັດ {p.governanceVersion.toString()} · ຜູ້ຮັບ{" "}
-              {p.recipientRulesVersion.toString()}
-            </dd>
             <dt> ຍອດຄົງເຫຼືອລ່າສຸດ </dt>
-            <dd>{ofl(row.fund.balance)} OFL</dd>
+            <dd>{formatOfl(row.fund.balance)} OFL</dd>
           </dl>
           <Notice>
             {" "}
             ລະບົບຈະກວດສິດ ຍອດເງິນ ຜູ້ຮັບ ແລະການອະນຸມັດອີກຄັ້ງກ່ອນດຳເນີນການ.
             ຂໍ້ສະເໜີທີ່ລໍຖ້າບໍ່ໄດ້ຈອງເງິນໄວ້.{" "}
           </Notice>
-          <Connect chainId={d.chainId} />
+          {!c.address || c.chainId !== d.chainId ? (
+            <Connect chainId={d.chainId} />
+          ) : null}
           <div className="flex flex-wrap gap-3">
-            <Button
-              disabled={
-                !isApprover ||
-                voted.data ||
-                s !== 0 ||
-                tx.busy ||
-                c.chainId !== d.chainId
-              }
-              onClick={() =>
-                tx.send(
-                  d.openFundAddress,
-                  encodeFunctionData({
-                    abi: openFundAbi,
-                    functionName: "approveProposal",
-                    args: [id],
-                  }),
-                )
-              }
-            >
-              {t("approve")}
-              {voted.data ? " · ອະນຸມັດແລ້ວ" : ""}
-            </Button>
-            <Button
-              disabled={
-                !c.address ||
-                s !== 2 ||
-                !hasFunds ||
-                tx.busy ||
-                c.chainId !== d.chainId
-              }
-              onClick={() =>
-                tx.send(
-                  d.openFundAddress,
-                  encodeFunctionData({
-                    abi: openFundAbi,
-                    functionName: "executeProposal",
-                    args: [id],
-                  }),
-                )
-              }
-            >
-              {t("execute")}
-            </Button>
+            {s === 0 ? (
+              <Button
+                disabled={
+                  !isApprover ||
+                  voted.data ||
+                  s !== 0 ||
+                  tx.busy ||
+                  c.chainId !== d.chainId
+                }
+                onClick={() =>
+                  tx.send(
+                    d.openFundAddress,
+                    encodeFunctionData({
+                      abi: openFundAbi,
+                      functionName: "approveProposal",
+                      args: [id],
+                    }),
+                  )
+                }
+              >
+                {t("approve")}
+                {voted.data ? " · ອະນຸມັດແລ້ວ" : ""}
+              </Button>
+            ) : null}
+            {s === 2 ? (
+              <Button
+                disabled={
+                  !c.address ||
+                  s !== 2 ||
+                  !hasFunds ||
+                  tx.busy ||
+                  c.chainId !== d.chainId
+                }
+                onClick={() =>
+                  tx.send(
+                    d.openFundAddress,
+                    encodeFunctionData({
+                      abi: openFundAbi,
+                      functionName: "executeProposal",
+                      args: [id],
+                    }),
+                  )
+                }
+              >
+                {t("execute")}
+              </Button>
+            ) : null}
             {canCancel && s < 3 ? (
               <Button
                 variant="outline"
@@ -322,6 +324,21 @@ function Detail({ id }: { id: bigint }) {
                   : "ຜູ້ທີ່ເຊື່ອມກະເປົາໃນເຄືອຂ່າຍນີ້ສາມາດດຳເນີນການໄດ້."}
           </small>
           <TxFeedback state={tx.state} d={d} />
+          <Disclosure title="ຂໍ້ມູນອ້າງອີງຂໍ້ສະເໜີ">
+            <dl className="data-list">
+              {" "}
+              <dt> ຮຸ່ນຂໍ້ມູນ </dt>
+              <dd>
+                {" "}
+                ການອະນຸມັດ {p.governanceVersion.toString()} · ຜູ້ຮັບ{" "}
+                {p.recipientRulesVersion.toString()}
+              </dd>
+              <dt>ລະຫັດຫຼັກຖານ</dt>
+              <dd>
+                <code>{p.action.evidenceHash}</code>
+              </dd>
+            </dl>
+          </Disclosure>
         </div>
       </Panel>
       <Panel title="ປະຫວັດການອະນຸມັດ">

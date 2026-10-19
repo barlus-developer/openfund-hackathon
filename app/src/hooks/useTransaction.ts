@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { useRef, useState } from "react";
 import { useConnection, useWalletClient } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
@@ -92,7 +92,9 @@ export function useTransaction(d: Deployment) {
         (stage) => update({ stage }),
       );
       update({ receipt, hash: receipt.transactionHash });
-      toast.success("ຢືນຢັນລາຍການສຳເລັດ", {
+      toast.add({
+        type: "success",
+        title: "ຢືນຢັນລາຍການສຳເລັດ",
         description: receipt.transactionHash,
       });
       await queryClient.invalidateQueries();
@@ -100,7 +102,7 @@ export function useTransaction(d: Deployment) {
     } catch (error) {
       const message = friendlyError(error);
       const rawMessage = error instanceof Error ? error.message : String(error);
-      toast.error(message);
+      toast.add({ type: "error", title: message });
       update({
         stage: /rejected|denied|4001/i.test(rawMessage)
           ? "Rejected"

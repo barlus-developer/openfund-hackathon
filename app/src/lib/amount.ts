@@ -9,6 +9,14 @@ export function amount(value: string): bigint {
 }
 export const ofl = (value: bigint | undefined) =>
   value === undefined ? "—" : formatUnits(value, 18);
+// Display grouping without rounding token precision or changing transaction input.
+export function formatOfl(value: bigint | undefined): string {
+  if (value === undefined) return "—";
+  const [whole, fraction] = ofl(value).split(".");
+  return (
+    BigInt(whole).toLocaleString("en-US") + (fraction ? `.${fraction}` : "")
+  );
+}
 export const donationData = (id: bigint) =>
   encodeAbiParameters([{ type: "uint256" }], [id]);
 export const shorten = (a?: string) =>

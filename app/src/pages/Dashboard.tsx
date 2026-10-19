@@ -1,6 +1,7 @@
+import { PageHeader, RouteNavigation } from "@/components/patterns";
 import { actionLabels, proposalStatusLabels } from "@/app/labels";
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, Navigate } from "react-router-dom";
 import { useConnection } from "wagmi";
 import { useQueries, useQuery, keepPreviousData } from "@tanstack/react-query";
 import { encodeFunctionData } from "viem";
@@ -18,7 +19,7 @@ import { Connect } from "@/features/wallet/Connect";
 import { FundCard } from "@/features/funds/FundCard";
 import { ScanControls, EventRow } from "@/features/transparency/Activity";
 import {
-  Panel,
+  ActionLink,
   EmptyState,
   ErrorNotice,
   Loading,
@@ -27,38 +28,44 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/app/i18n";
-import { ofl } from "@/lib/amount";
+import { formatOfl } from "@/lib/amount";
 import type { Address } from "viem";
 export function Dashboard() {
   const c = useConnection();
+  const { section = "" } = useParams();
+  if (!["funds", "donations", "approvals", "refunds"].includes(section))
+    return <Navigate to="/dashboard/funds" replace />;
   if (!defaultDeployment)
     return (
       <EmptyState description="ລະບົບຍັງບໍ່ພ້ອມໃຊ້ງານ. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ." />
     );
   return (
-    <div className="stack">
-      <div className="page-title">
-        <div>
-          <div className="eyebrow"> ພື້ນທີ່ຂອງເຈົ້າ </div>
-          <h1> ກອງທຶນຂອງຂ້ອຍ </h1>
-        </div>
-        <Connect />
-      </div>
-      <nav className="tabs">
-        {["", "funds", "donations", "approvals", "refunds"].map((s, i) => (
-          <Link to={"/dashboard" + (s ? "/" + s : "")} key={s}>
-            {
-              [
-                "ພາບລວມ",
-                "ກອງທຶນຂອງຂ້ອຍ",
-                "ການສະໜັບສະໜູນຂອງຂ້ອຍ",
-                "ການອະນຸມັດ",
-                "ຮັບເງິນຄືນ",
-              ][i]
-            }
-          </Link>
-        ))}
-      </nav>
+    <div className="flex min-w-0 flex-col gap-6">
+      <PageHeader
+        title={
+          section === "donations"
+            ? "ການສະໜັບສະໜູນຂອງຂ້ອຍ"
+            : section === "approvals"
+              ? "ລໍຖ້າອະນຸມັດ"
+              : section === "refunds"
+                ? "ຮັບເງິນຄືນ"
+                : "ກອງທຶນຂອງຂ້ອຍ"
+        }
+        action={
+          c.address && (!section || section === "funds") ? (
+            <ActionLink to="/funds/create">ສ້າງກອງທຶນ</ActionLink>
+          ) : undefined
+        }
+      />
+      <RouteNavigation
+        label="ເມນູກອງທຶນຂອງຂ້ອຍ"
+        items={["funds", "donations", "approvals", "refunds"].map((tab, i) => ({
+          to: `/dashboard/${tab}`,
+          label: ["ກອງທຶນຂອງຂ້ອຍ", "ການສະໜັບສະໜູນ", "ການອະນຸມັດ", "ຮັບເງິນຄືນ"][
+            i
+          ],
+        }))}
+      />
       {c.address ? (
         <WalletDashboard
           key={c.address}
@@ -66,7 +73,11 @@ export function Dashboard() {
           address={c.address}
         />
       ) : (
-        <EmptyState description="ເຊື່ອມ MetaMask ເພື່ອເບິ່ງກອງທຶນ ການສະໜັບສະໜູນ ລາຍການອະນຸມັດ ແລະເງິນທີ່ຮັບຄືນໄດ້ຂອງເຈົ້າ." />
+        <EmptyState
+          title="ເຊື່ອມກະເປົາຂອງເຈົ້າ"
+          description="ເບິ່ງກອງທຶນ ແລະການສະໜັບສະໜູນຂອງເຈົ້າ."
+          action={<Connect />}
+        />
       )}
     </div>
   );
@@ -121,19 +132,11 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
     .map((e) => e.args.proposalId as bigint)
     .reverse();
   const refundIds = [...new Set(donations.map((e) => e.args.fundId as bigint))];
+  if (q.isLoading || funds.isLoading) return <Loading />;
   return (
-    <div className="stack">
+    <div className="flex min-w-0 flex-col gap-6">
       <ScanControls q={q} />
-      <small>
-        {" "}
-        ລາຍການນີ້ອີງຕາມຂໍ້ມູນທີ່ໂຫຼດແລ້ວ.
-        ສາມາດໂຫຼດປະຫວັດເພີ່ມເພື່ອຄົ້ນຫາລາຍການອື່ນຂອງເຈົ້າ.{" "}
-      </small>
-      {q.isLoading ? <Loading /> : null}
       <ErrorNotice error={funds.error} />
-      <small>
-        {discovered.length} / {ids.length} ກອງທຶນທີ່ກ່ຽວຂ້ອງຖືກໂຫຼດແລ້ວ.{" "}
-      </small>
       {Math.max(
         ids.length,
         proposalIds.length,
@@ -145,36 +148,28 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
           ໂຫຼດເພີ່ມ 12 ລາຍການ{" "}
         </Button>
       ) : null}
-      {section === "" ? (
-        <div className="metrics">
-          {[
-            ["ກອງທຶນທີ່ສ້າງ ຫຼືດູແລ", myFunds.length],
-            ["ຈຳນວນການສະໜັບສະໜູນ", donations.length],
-            ["ກອງທຶນທີ່ຮ່ວມອະນຸມັດ", approverFunds.length],
-            ["ກອງທຶນທີ່ອາດຮັບເງິນຄືນໄດ້", refundIds.length],
-          ].map(([key, v]) => (
-            <div className="metric" key={key}>
-              <span>{key}</span>
-              <strong>{v}</strong>
-            </div>
-          ))}
-        </div>
-      ) : null}
       {section === "" || section === "funds" ? (
-        <Panel title="ກອງທຶນທີ່ສ້າງ ຫຼືກຳລັງດູແລ">
+        <section aria-label="ກອງທຶນທີ່ສ້າງ ຫຼືກຳລັງດູແລ">
           {myFunds.length ? (
-            <div className="fund-grid">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
               {myFunds.map((r) => (
                 <FundCard key={r.id.toString()} row={r} d={d} />
               ))}
             </div>
           ) : (
-            <EmptyState />
+            <EmptyState
+              title="ຍັງບໍ່ມີກອງທຶນຂອງເຈົ້າ"
+              action={
+                <ActionLink to="/funds/create" outline>
+                  ສ້າງກອງທຶນ
+                </ActionLink>
+              }
+            />
           )}
-        </Panel>
+        </section>
       ) : null}
-      {section === "" || section === "donations" ? (
-        <Panel title="ປະຫວັດການສະໜັບສະໜູນຂອງຂ້ອຍ">
+      {section === "donations" ? (
+        <section aria-label="ປະຫວັດການສະໜັບສະໜູນຂອງຂ້ອຍ">
           {donations.length ? (
             donations
               .slice()
@@ -188,12 +183,15 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
                 />
               ))
           ) : (
-            <EmptyState />
+            <EmptyState
+              title="ຍັງບໍ່ມີການສະໜັບສະໜູນ"
+              action={<ActionLink to="/funds">ຄົ້ນຫາກອງທຶນ</ActionLink>}
+            />
           )}
-        </Panel>
+        </section>
       ) : null}
-      {section === "" || section === "approvals" ? (
-        <Panel title="ລາຍການທີ່ລໍຖ້າຂ້ອຍອະນຸມັດ">
+      {section === "approvals" ? (
+        <section aria-label="ລາຍການທີ່ລໍຖ້າຂ້ອຍອະນຸມັດ">
           {proposalIds.length ? (
             proposalIds
               .slice(0, limit)
@@ -201,10 +199,10 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
           ) : (
             <EmptyState description="ຍັງບໍ່ພົບລາຍການທີ່ຕ້ອງອະນຸມັດໃນຂໍ້ມູນທີ່ໂຫຼດ." />
           )}
-        </Panel>
+        </section>
       ) : null}
-      {section === "" || section === "refunds" ? (
-        <Panel title="ຮັບເງິນສະໜັບສະໜູນຄືນ">
+      {section === "refunds" ? (
+        <section aria-label="ຮັບເງິນສະໜັບສະໜູນຄືນ">
           {refundIds.length ? (
             refundIds
               .slice(0, limit)
@@ -219,7 +217,7 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
           ) : (
             <EmptyState description="ຍັງບໍ່ພົບລາຍການຮັບເງິນຄືນ. ກອງທຶນທີ່ເກັບເງິນໄວ້ ຫຼືຮັບສະໜັບສະໜູນຕໍ່ເນື່ອງ ບໍ່ມີການຄືນເງິນອັດຕະໂນມັດ." />
           )}
-        </Panel>
+        </section>
       ) : null}
     </div>
   );
@@ -232,7 +230,7 @@ function ApprovalTask({ d, id }: { d: Deployment; id: bigint }) {
   if (s > 2) return null;
   return (
     <Link
-      className="activity-row"
+      className="flex min-w-0 flex-col justify-between gap-4 border-b py-5 last:border-0 sm:flex-row"
       to={fundPath(d, p.fundId) + `/proposals/${id}`}
     >
       <strong>
@@ -275,18 +273,18 @@ function RefundTask({
   if (q.isLoading) return <Loading />;
   if (!q.data)
     return (
-      <p className="tagline">
+      <p className="text-sm leading-7 text-muted-foreground">
         {" "}
         ກອງທຶນ # {id.toString()} : ບໍ່ມີຍອດທີ່ຮັບຄືນໄດ້ໃນຂະນະນີ້.{" "}
         <Link to={fundPath(d, id)}> ເບິ່ງເງື່ອນໄຂກອງທຶນ ↗ </Link>
       </p>
     );
   return (
-    <div className="activity-row">
+    <div className="flex min-w-0 flex-col justify-between gap-4 border-b py-5 last:border-0 sm:flex-row">
       <div>
         <Link to={fundPath(d, id)}>
           {" "}
-          ກອງທຶນ # {id.toString()} · {ofl(q.data)} OFL
+          ກອງທຶນ # {id.toString()} · {formatOfl(q.data)} OFL
         </Link>
         <p> ຄືນ 100% ໄປກະເປົາເດີມ · ມີຄ່າທຳນຽມເຄືອຂ່າຍ · ບໍ່ມີວັນໝົດອາຍຸ </p>
         <code className="hash">{address}</code>

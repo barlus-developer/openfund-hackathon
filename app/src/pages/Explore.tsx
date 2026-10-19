@@ -1,12 +1,17 @@
+import { PageHeader, Disclosure } from "@/components/patterns";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Plus, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useFunds } from "@/web3/reads";
 import { defaultDeployment, deployments } from "@/web3/deployments";
 import { FundCard } from "@/features/funds/FundCard";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Field, FieldLabel } from "@/components/ui/field";
+import {
+  InputGroup,
+  InputGroupInput,
+  InputGroupAddon,
+} from "@/components/ui/input-group";
+import { Field, FieldLabel, FieldGroup } from "@/components/ui/field";
 import {
   ActionLink,
   EmptyState,
@@ -21,24 +26,14 @@ export function Explore() {
   const d = deployments.find((d) => d.version === version);
   return (
     <>
-      <div className="page-title">
-        <div>
-          <div className="eyebrow">ພາລະກິດຂອງອົງກອນ ແລະມູນນິທິ</div>
-          <h1>ຄົ້ນຫາກອງທຶນ</h1>
-          <p>
-            ຄົ້ນພົບກອງທຶນຈາກອົງກອນ ແລະມູນນິທິ.
-            ເລືອກພາລະກິດທີ່ເຈົ້າຢາກຮ່ວມສະໜັບສະໜູນ.
-          </p>
-        </div>
-        <ActionLink to="/funds/create">
-          <Plus data-icon="inline-start" />
-          ສ້າງກອງທຶນ
-        </ActionLink>
-      </div>
+      <PageHeader
+        title="ຄົ້ນຫາກອງທຶນ"
+        description="ເລືອກກອງທຶນທີ່ເຈົ້າຢາກສະໜັບສະໜູນ."
+      />
       {d ? (
         <>
           {deployments.length > 1 ? (
-            <div className="mb-6">
+            <Disclosure title="ເລືອກເຄືອຂ່າຍ">
               <SelectField
                 label="ເຄືອຂ່າຍ"
                 value={version!}
@@ -48,7 +43,7 @@ export function Explore() {
                   `${d.chainId} · ${d.version}`,
                 ])}
               />
-            </div>
+            </Disclosure>
           ) : null}
           <FundBrowser key={d.version} d={d} />
         </>
@@ -111,6 +106,13 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
           : b.id;
     return x === y ? 0 : sort === "ending" ? (x < y ? -1 : 1) : x > y ? -1 : 1;
   });
+  const hasFilters =
+    !!search ||
+    category !== "all" ||
+    mode !== "all" ||
+    status !== "all" ||
+    policy !== "all" ||
+    quorum !== "all";
   function reset() {
     setSearch("");
     setParams({});
@@ -121,109 +123,145 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
     setSort("recent");
   }
   return (
-    <div className="stack">
-      <div className="explore-toolbar">
-        <div className="search-row">
-          <Field>
-            <FieldLabel htmlFor="fund-search">ຄົ້ນຫາກອງທຶນ</FieldLabel>
-            <div className="search-field">
-              <Search aria-hidden="true" />
-              <Input
-                id="fund-search"
-                placeholder="ຊື່ກອງທຶນ ຫຼືສິ່ງທີ່ເຈົ້າສົນໃຈ…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </Field>
-          <SelectField
-            label="ໝວດໝູ່"
-            value={category}
-            onChange={(value) =>
-              setParams(value === "all" ? {} : { category: value })
-            }
-            options={[
-              ["all", "ທຸກໝວດໝູ່"],
-              ...categoryOptions.map((v) => [v, categoryLabel(v)] as const),
-            ]}
-          />
-          <SelectField
-            label="ຈັດລຽງຕາມ"
-            value={sort}
-            onChange={setSort}
-            options={[
-              ["recent", "ກອງທຶນໃໝ່ລ່າສຸດ"],
-              ["raised", "ຍອດລະດົມທຶນ"],
-              ["ending", "ໃກ້ສິ້ນສຸດ"],
-            ]}
-          />
-        </div>
-        <details className="advanced-filters">
-          <summary>ຕົວເລືອກການຄົ້ນຫາເພີ່ມເຕີມ</summary>
-          <div className="filters">
+    <div className="flex min-w-0 flex-col gap-6">
+      <section aria-label="ຄົ້ນຫາ ແລະກັ່ນຕອງກອງທຶນ">
+        <FieldGroup>
+          <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-[2fr_1fr_1fr]">
+            <Field>
+              <FieldLabel htmlFor="fund-search">ຄົ້ນຫາກອງທຶນ</FieldLabel>
+              <InputGroup>
+                <InputGroupAddon>
+                  <Search aria-hidden="true" />
+                </InputGroupAddon>
+                <InputGroupInput
+                  id="fund-search"
+                  placeholder="ຊື່ກອງທຶນ ຫຼືສິ່ງທີ່ເຈົ້າສົນໃຈ…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </InputGroup>
+            </Field>
             <SelectField
-              label="ຮູບແບບ"
-              value={mode}
-              onChange={setMode}
+              label="ໝວດໝູ່"
+              value={category}
+              onChange={(value) =>
+                setParams(value === "all" ? {} : { category: value })
+              }
               options={[
-                ["all", "ທຸກຮູບແບບ"],
-                ["0", "ມີເປົ້າໝາຍ"],
-                ["1", "ຕໍ່ເນື່ອງ"],
+                ["all", "ທຸກໝວດໝູ່"],
+                ...categoryOptions.map((v) => [v, categoryLabel(v)] as const),
               ]}
             />
             <SelectField
-              label="ສະຖານະ"
-              value={status}
-              onChange={setStatus}
+              label="ຈັດລຽງຕາມ"
+              value={sort}
+              onChange={setSort}
               options={[
-                ["all", "ທຸກສະຖານະ"],
-                ...fundStatusLabels.map((v, i) => [String(i), v] as const),
-              ]}
-            />
-            <SelectField
-              label="ຖ້າບໍ່ເຖິງເປົ້າໝາຍ"
-              value={policy}
-              onChange={setPolicy}
-              options={[
-                ["all", "ທຸກເງື່ອນໄຂ"],
-                ["0", "ຄືນເງິນ"],
-                ["1", "ເກັບເງິນໄວ້"],
-              ]}
-            />
-            <SelectField
-              label="ການອະນຸມັດ"
-              value={quorum}
-              onChange={setQuorum}
-              options={[
-                ["all", "ທຸກຮູບແບບ"],
-                ["single", "ຄົນດຽວ"],
-                ["multi", "ຫຼາຍຄົນ"],
+                ["recent", "ກອງທຶນໃໝ່ລ່າສຸດ"],
+                ["raised", "ຍອດລະດົມທຶນ"],
+                ["ending", "ໃກ້ສິ້ນສຸດ"],
               ]}
             />
           </div>
-        </details>
+          <Disclosure title={<>ຕົວເລືອກເພີ່ມເຕີມ</>}>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <SelectField
+                label="ຮູບແບບ"
+                value={mode}
+                onChange={setMode}
+                options={[
+                  ["all", "ທຸກຮູບແບບ"],
+                  ["0", "ມີເປົ້າໝາຍ"],
+                  ["1", "ຕໍ່ເນື່ອງ"],
+                ]}
+              />
+              <SelectField
+                label="ສະຖານະ"
+                value={status}
+                onChange={setStatus}
+                options={[
+                  ["all", "ທຸກສະຖານະ"],
+                  ...fundStatusLabels.map((v, i) => [String(i), v] as const),
+                ]}
+              />
+              <SelectField
+                label="ຖ້າບໍ່ເຖິງເປົ້າໝາຍ"
+                value={policy}
+                onChange={setPolicy}
+                options={[
+                  ["all", "ທຸກເງື່ອນໄຂ"],
+                  ["0", "ຄືນເງິນ"],
+                  ["1", "ເກັບເງິນໄວ້"],
+                ]}
+              />
+              <SelectField
+                label="ການອະນຸມັດ"
+                value={quorum}
+                onChange={setQuorum}
+                options={[
+                  ["all", "ທຸກຮູບແບບ"],
+                  ["single", "ຄົນດຽວ"],
+                  ["multi", "ຫຼາຍຄົນ"],
+                ]}
+              />
+            </div>
+          </Disclosure>
+        </FieldGroup>
+      </section>
+      <div
+        className="text-xs leading-7 text-muted-foreground"
+        aria-live="polite"
+      >
+        {q.isLoading ? "" : `${rows.length} ກອງທຶນ`}
+        {q.hasNextPage
+          ? ` · ຄົ້ນຫາໃນ ${loaded.length} / ${q.data?.pages[0]?.count.toString() ?? "—"} ກອງທຶນທີ່ໂຫຼດແລ້ວ`
+          : ""}
       </div>
-      <div className="result-count" aria-live="polite">
-        {rows.length} ກອງທຶນທີ່ກົງກັນ · ໂຫຼດແລ້ວ {loaded.length} /{" "}
-        {q.data?.pages[0]?.count.toString() ?? "—"} ກອງທຶນ.
-        ການຄົ້ນຫາອີງຕາມຂໍ້ມູນທີ່ໂຫຼດແລ້ວ.
-      </div>
+      {hasFilters && rows.length > 0 ? (
+        <div>
+          <Button variant="ghost" size="sm" onClick={reset}>
+            ລ້າງຕົວເລືອກການຄົ້ນຫາ
+          </Button>
+        </div>
+      ) : null}
       <ErrorNotice error={q.error} />
+      {q.error ? (
+        <div>
+          <Button
+            variant="outline"
+            disabled={q.isFetching}
+            onClick={() => q.refetch()}
+          >
+            ລອງໂຫຼດໃໝ່
+          </Button>
+        </div>
+      ) : null}
       {q.isLoading ? (
-        <Loading />
+        <Loading cards />
       ) : rows.length ? (
-        <div className="fund-grid">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {rows.map((row) => (
             <FundCard key={String(row.id)} row={row} d={d} />
           ))}
         </div>
       ) : !q.error ? (
-        <div className="featured-empty">
-          <EmptyState description="ລອງໃຊ້ຄຳຄົ້ນຫາອື່ນ ຫຼືປ່ຽນໝວດໝູ່ເພື່ອເບິ່ງກອງທຶນເພີ່ມ." />
-          <Button variant="outline" onClick={reset}>
-            ລ້າງຕົວເລືອກການຄົ້ນຫາ
-          </Button>
-        </div>
+        <EmptyState
+          title={hasFilters ? "ບໍ່ພົບກອງທຶນ" : "ຍັງບໍ່ມີກອງທຶນ"}
+          description={
+            hasFilters ? "ລອງໃຊ້ຄຳຄົ້ນຫາອື່ນ ຫຼືປ່ຽນໝວດໝູ່." : undefined
+          }
+          action={
+            hasFilters ? (
+              <Button variant="outline" onClick={reset}>
+                ລ້າງຕົວເລືອກການຄົ້ນຫາ
+              </Button>
+            ) : (
+              <ActionLink to="/funds/create" outline>
+                ສ້າງກອງທຶນ
+              </ActionLink>
+            )
+          }
+        />
       ) : null}
       {q.hasNextPage ? (
         <Button

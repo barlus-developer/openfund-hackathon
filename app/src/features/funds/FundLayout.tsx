@@ -1,4 +1,14 @@
-import { NavLink, Outlet, useParams, useOutletContext } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { useConnection } from "wagmi";
+import { ArrowLeft } from "lucide-react";
+import { Disclosure, RouteNavigation } from "@/components/patterns";
+import {
+  Link,
+  Outlet,
+  useLocation,
+  useParams,
+  useOutletContext,
+} from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState, ErrorNotice, Loading } from "@/components/common";
 import {
@@ -29,47 +39,90 @@ export function FundLayout() {
 }
 function LoadFund({ d, id }: { d: Deployment; id: bigint }) {
   const q = useFund(d, id);
+  const c = useConnection();
+  const { pathname } = useLocation();
   const { t } = useLanguage();
   if (q.isLoading) return <Loading />;
-  if (q.error) return <ErrorNotice error={q.error} />;
+  if (q.error)
+    return (
+      <div className="flex flex-col items-start gap-4">
+        <ErrorNotice error={q.error} />
+        <Button
+          variant="outline"
+          disabled={q.isFetching}
+          onClick={() => q.refetch()}
+        >
+          ລອງໂຫຼດໃໝ່
+        </Button>
+      </div>
+    );
   if (!q.data) return <EmptyState />;
   const row = q.data;
+  const root = fundPath(d, id);
+  const team = [row.fund.manager, ...row.approvers].some(
+    (a) => a.toLowerCase() === c.address?.toLowerCase(),
+  );
+  const teamPage = ["governance", "proposals", "manage"].some((tab) =>
+    pathname.startsWith(`${root}/${tab}`),
+  );
+  const items = (
+    tabs: readonly (
+      | "overview"
+      | "reports"
+      | "payouts"
+      | "transactions"
+      | "governance"
+      | "proposals"
+      | "manage"
+    )[],
+  ) =>
+    tabs.map((tab) => ({
+      to: root + (tab === "overview" ? "" : `/${tab}`),
+      label: tab === "transactions" ? "ປະຫວັດ" : t(tab),
+      end: tab === "overview",
+    }));
+  const donating = pathname === `${root}/donate`;
+  const teamNavigation = (
+    <RouteNavigation
+      label="ຈັດການກອງທຶນ"
+      items={items(["proposals", "governance", "manage"])}
+    />
+  );
   return (
-    <>
-      <div className="eyebrow">ກອງທຶນ #{id.toString()}</div>
-      <div className="page-title">
-        <div>
-          <h1>{row.fund.title}</h1>
-          <p>{row.fund.summary}</p>
-        </div>
-        <div className="flex gap-2">
-          <Badge>{fundStatusLabels[row.status]}</Badge>
-          <Badge variant="outline">{categoryLabel(row.fund.category)}</Badge>
+    <div className="flex min-w-0 flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <Link
+          to={donating ? root : "/funds"}
+          className="inline-flex min-h-11 items-center gap-2 self-start text-sm text-muted-foreground hover:text-primary"
+        >
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          {donating ? "ກັບໄປກອງທຶນ" : "ກອງທຶນທັງໝົດ"}
+        </Link>
+        <div className="flex flex-col gap-3">
+          {!donating ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-xs text-muted-foreground">
+                {categoryLabel(row.fund.category)}
+              </span>
+              <Badge variant="secondary">{fundStatusLabels[row.status]}</Badge>
+            </div>
+          ) : null}
+          <h1 className="text-2xl leading-relaxed font-semibold sm:text-3xl">
+            {row.fund.title}
+          </h1>
         </div>
       </div>
-      <nav className="tabs" aria-label="ເມນູກອງທຶນ">
-        {(
-          [
-            "overview",
-            "donate",
-            "governance",
-            "proposals",
-            "payouts",
-            "transactions",
-            "reports",
-            "manage",
-          ] as const
-        ).map((tab, i) => (
-          <NavLink
-            end={i === 0}
-            key={tab}
-            to={fundPath(d, id) + (i === 0 ? "" : `/${tab}`)}
-          >
-            {t(tab)}
-          </NavLink>
-        ))}
-      </nav>
+      {!donating ? (
+        <RouteNavigation
+          label="ເມນູກອງທຶນ"
+          items={items(["overview", "reports", "payouts", "transactions"])}
+        />
+      ) : null}
+      {!donating && (team || teamPage) ? teamNavigation : null}
       <Outlet context={{ d, row } satisfies FundContext} />
-    </>
+      {!donating && !team && !teamPage ? (
+        <Disclosure title="ສຳລັບຜູ້ດູແລກອງທຶນ">{teamNavigation}</Disclosure>
+      ) : null}
+    </div>
   );
 }

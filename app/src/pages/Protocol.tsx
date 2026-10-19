@@ -1,18 +1,16 @@
+import { PageHeader } from "@/components/patterns";
+import { Disclosure } from "@/components/patterns";
 import { deployments, chainFor, defaultDeployment } from "@/web3/deployments";
 import { Panel, Notice, EmptyState } from "@/components/common";
 export function Protocol() {
   return (
-    <div className="stack prose">
-      <div className="page-title">
-        <div>
-          <div className="eyebrow">ຂໍ້ມູນອ້າງອີງຂອງລະບົບ</div>
-          <h1>ເຄືອຂ່າຍ OpenFund</h1>
-          <p>ກວດສອບເຄືອຂ່າຍ ແລະທີ່ຢູ່ຂອງລະບົບທີ່ກອງທຶນໃຊ້.</p>
-        </div>
-      </div>
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
+      <PageHeader
+        title={<>ເຄືອຂ່າຍ OpenFund</>}
+        description={<>ກວດສອບເຄືອຂ່າຍ ແລະທີ່ຢູ່ຂອງລະບົບທີ່ກອງທຶນໃຊ້.</>}
+      />
       <Notice title="ກວດສອບກ່ອນສະໜັບສະໜູນ">
-        ການມີກອງທຶນຢູ່ໃນ OpenFund ບໍ່ແມ່ນການຮັບຮອງຕົວຕົນຜູ້ສ້າງ
-        ຫຼືຜົນສຳເລັດຂອງໂຄງການ. ກະລຸນາອ່ານເງື່ອນໄຂ ແລະກວດສອບຂໍ້ມູນປະກອບ.
+        ລະບົບຍັງຢູ່ໃນຂັ້ນທົດລອງ. ກະລຸນາກວດສອບກອງທຶນ ແລະເງື່ອນໄຂກ່ອນສະໜັບສະໜູນ.
       </Notice>
       {deployments.length ? (
         deployments.map((d) => (
@@ -43,8 +41,7 @@ export function Protocol() {
               <dt>ຈຳນວນການຢືນຢັນ</dt>
               <dd>{d.confirmations ?? (d.chainId === 31337 ? 1 : 2)}</dd>
             </dl>
-            <details className="advanced-filters">
-              <summary>ເບິ່ງລາຍລະອຽດທາງເຕັກນິກ</summary>
+            <Disclosure title={<>ເບິ່ງລາຍລະອຽດທາງເຕັກນິກ</>}>
               <dl className="data-list mt-6">
                 <dt>ໝາຍເລກເຄືອຂ່າຍ</dt>
                 <dd>{d.chainId}</dd>
@@ -68,7 +65,7 @@ export function Protocol() {
               </dl>
               {d.explorerUrl ? (
                 <a
-                  className="text-link"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline [&_svg]:size-4"
                   href={`${d.explorerUrl}/address/${d.openFundAddress}#code`}
                   target="_blank"
                   rel="noreferrer"
@@ -76,31 +73,31 @@ export function Protocol() {
                   ເບິ່ງລະຫັດໃນເວັບກວດສອບ ↗
                 </a>
               ) : (
-                <p>
+                <p className="text-sm text-muted-foreground">
                   ຍັງບໍ່ມີເວັບກວດສອບພາຍນອກ. ລະຫັດຕົ້ນສະບັບຢູ່ໃນ{" "}
                   <code>contracts/src/OpenFund.sol</code> ແລະ{" "}
                   <code>OFLToken.sol</code>.
                 </p>
               )}
-            </details>
+            </Disclosure>
           </Panel>
         ))
       ) : (
         <EmptyState description="ລະບົບຍັງບໍ່ພ້ອມໃຊ້ງານ. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ." />
       )}
-      <Panel title="ກອງທຶນມີເງື່ອນໄຂຂອງຕົນເອງ">
-        <p>
+      <Disclosure title="ການດູແລເງິນ ແລະຜູ້ອອກ OFL">
+        <p className="text-sm text-muted-foreground">
           ເງິນຂອງແຕ່ລະກອງທຶນຖືກແຍກກັນ. ການຈ່າຍເງິນ
           ຫຼືປິດກອງທຶນຕ້ອງຜ່ານການອະນຸມັດຕາມເງື່ອນໄຂ.
           ບໍ່ມີຜູ້ດູແລລະບົບທີ່ສາມາດຖອນເງິນ ຫຼືປ່ຽນເງື່ອນໄຂແທນໄດ້.
         </p>
-        <p>
+        <p className="text-sm text-muted-foreground">
           ຜູ້ອອກ OFL ເປັນຄົນລະສ່ວນກັບກອງທຶນ. ຜູ້ອອກສາມາດເພີ່ມ OFL
           ແລະລົງທະບຽນທີ່ຢູ່ລະບົບເພີ່ມໄດ້ ແຕ່ຍຶດ ຫຼືລຶບຍອດເງິນຂອງຜູ້ຖື
           ຫຼືກອງທຶນບໍ່ໄດ້. ການລົງທະບຽນທີ່ຢູ່ປອມຍັງອາດສ້າງຄວາມສ່ຽງໄດ້
           ຈຶ່ງຄວນກວດທີ່ຢູ່ກ່ອນໂອນ.
         </p>
-      </Panel>
+      </Disclosure>
       <Notice title="OFL ທົດລອງ">
         OFL ມີທົດສະນິຍົມ 18 ຕຳແໜ່ງ. 1 OFL ≈ 1 ກີບ ເປັນພຽງຄ່າອ້າງອີງ
         ບໍ່ແມ່ນການຮັບຮອງເງິນສຳຮອງ ຫຼືການແລກຄືນເປັນເງິນກີບ.

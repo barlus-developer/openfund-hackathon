@@ -1,3 +1,4 @@
+import { Disclosure, PageHeader, Stat } from "@/components/patterns";
 import { useState } from "react";
 import { useConnection, useWalletClient } from "wagmi";
 import { encodeFunctionData, formatUnits, getAddress } from "viem";
@@ -6,7 +7,7 @@ import { useBalances } from "@/web3/reads";
 import { tokenAbi } from "@/web3/generated/OFLToken";
 import { useTransaction } from "@/hooks/useTransaction";
 import { Connect } from "@/features/wallet/Connect";
-import { amount, ofl } from "@/lib/amount";
+import { amount, formatOfl } from "@/lib/amount";
 import { walletAddress } from "@/features/funds/creation";
 import {
   Panel,
@@ -63,57 +64,92 @@ function WalletContent() {
     }
   }
   return (
-    <div className="stack">
-      <div className="page-title">
-        <h1>{t("wallet")}</h1>
-        <Connect />
-      </div>
-      <Notice title="OFL ທົດລອງ · ບໍ່ມີເງິນກີບຄ້ຳປະກັນ">
-        {" "}
-        1 OFL ≈ 1 ກີບ ເປັນພຽງຄ່າອ້າງອີງ. OFL ທົດລອງບໍ່ສາມາດຊື້
-        ຫຼືແລກຄືນເປັນເງິນກີບໄດ້.{" "}
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
+      <PageHeader
+        title={t("wallet")}
+        action={c.address ? <Connect /> : undefined}
+      />
+      <Notice title="OFL ທົດລອງ">
+        OFL ບໍ່ມີເງິນກີບຄ້ຳປະກັນ ແລະບໍ່ສາມາດແລກເປັນເງິນກີບໄດ້.
       </Notice>
-      <div className="detail-grid">
-        <Panel title="ຍອດຄົງເຫຼືອ ແລະການຮັບເງິນ">
-          <div className="stack">
-            <code className="hash">
-              {c.address || "ເຊື່ອມ MetaMask ເພື່ອຮັບ OFL."}
-            </code>
-            <div className="metrics">
-              <div className="metric">
-                <span> ຍອດ OFL </span>
-                <strong>{ofl(balances.data?.ofl)}</strong>
-              </div>
-              <div className="metric">
-                <span>
-                  {" "}
-                  ຍອດສຳລັບຄ່າທຳນຽມ ( {chainFor(d).nativeCurrency.symbol})
-                </span>
-                <strong>
-                  {balances.data
+      {!c.address ? (
+        <EmptyState
+          title="ເຊື່ອມກະເປົາຂອງເຈົ້າ"
+          description="ເບິ່ງຍອດ OFL ຮັບ ແລະໂອນເງິນ."
+          action={<Connect />}
+        />
+      ) : (
+        <>
+          <section
+            className="flex flex-col gap-5"
+            aria-label="ຍອດຄົງເຫຼືອ ແລະການຮັບເງິນ"
+          >
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Stat label="ຍອດ OFL" value={formatOfl(balances.data?.ofl)} />
+              <Stat
+                label={`ຍອດສຳລັບຄ່າທຳນຽມ (${chainFor(d).nativeCurrency.symbol})`}
+                value={
+                  balances.data
                     ? formatUnits(
                         balances.data.native,
                         chainFor(d).nativeCurrency.decimals,
                       )
-                    : "—"}
-                </strong>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              disabled={!c.address}
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(c.address!);
-                  setMessage("ສຳເນົາທີ່ຢູ່ແລ້ວ.");
-                } catch (e) {
-                  setError(e);
+                    : "—"
                 }
-              }}
-            >
-              {" "}
-              ສຳເນົາທີ່ຢູ່ຮັບເງິນ{" "}
-            </Button>
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <code className="hash">{c.address}</code>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(c.address!);
+                    setMessage("ສຳເນົາທີ່ຢູ່ແລ້ວ.");
+                  } catch (e) {
+                    setError(e);
+                  }
+                }}
+              >
+                ສຳເນົາທີ່ຢູ່ຮັບເງິນ
+              </Button>
+            </div>
+            {message ? (
+              <p role="status" className="text-sm text-muted-foreground">
+                {message}
+              </p>
+            ) : null}
+            <ErrorNotice error={balances.error || error} />
+          </section>
+          <Panel title="ໂອນ OFL">
+            <FieldGroup>
+              <TextField
+                label={t("recipient")}
+                value={target}
+                onChange={setTarget}
+              />
+              <TextField
+                label={t("amount")}
+                value={value}
+                inputMode="decimal"
+                onChange={setValue}
+              />
+              <p className="text-sm text-muted-foreground">
+                ສຳລັບກະເປົາອື່ນ. ຖ້າຕ້ອງການຊ່ວຍກອງທຶນ
+                ໃຫ້ໃຊ້ປຸ່ມສະໜັບສະໜູນໃນໜ້າກອງທຶນ.
+              </p>
+              <Button
+                disabled={
+                  tx.busy || c.chainId !== d.chainId || !target || !value
+                }
+                onClick={send}
+              >
+                {tx.busy ? "ກຳລັງໂອນ…" : "ໂອນ OFL ຜ່ານ MetaMask"}
+              </Button>
+              <TxFeedback state={tx.state} d={d} />
+            </FieldGroup>
+          </Panel>
+          <Disclosure title="ຕົວເລືອກກະເປົາ">
             <Button
               variant="outline"
               disabled={!wallet.data || c.chainId !== d.chainId}
@@ -135,53 +171,21 @@ function WalletContent() {
                 }
               }}
             >
-              {" "}
-              ເພີ່ມ OFL ໃນ MetaMask{" "}
+              ເພີ່ມ OFL ໃນ MetaMask
             </Button>
-            {d.explorerUrl && c.address ? (
+            {d.explorerUrl ? (
               <a
+                className="inline-flex min-h-11 items-center text-sm text-primary hover:underline"
                 href={`${d.explorerUrl}/address/${c.address}`}
                 target="_blank"
                 rel="noreferrer"
               >
-                {" "}
-                ເບິ່ງກະເປົາໃນເວັບກວດສອບ ↗{" "}
+                ເບິ່ງກະເປົາໃນເວັບກວດສອບ ↗
               </a>
-            ) : (
-              <small>
-                {" "}
-                ເຄືອຂ່າຍນີ້ຍັງບໍ່ມີເວັບກວດສອບພາຍນອກ.
-                ເຈົ້າຍັງເບິ່ງປະຫວັດໃນລະບົບນີ້ໄດ້.{" "}
-              </small>
-            )}
-            <small>{message}</small>
-            <ErrorNotice error={balances.error || error} />
-          </div>
-        </Panel>
-        <Panel title="ໂອນ OFL ໃຫ້ກະເປົາອື່ນ">
-          <FieldGroup>
-            <TextField
-              label={t("recipient")}
-              value={target}
-              onChange={setTarget}
-            />
-            <TextField label={t("amount")} value={value} onChange={setValue} />
-            <Button
-              disabled={!c.address || tx.busy || c.chainId !== d.chainId}
-              onClick={send}
-            >
-              {" "}
-              ໂອນ OFL ຜ່ານ MetaMask{" "}
-            </Button>
-            <small>
-              {" "}
-              ສຳລັບໂອນໃຫ້ກະເປົາອື່ນເທົ່ານັ້ນ. ຖ້າຕ້ອງການຊ່ວຍກອງທຶນ
-              ໃຫ້ໃຊ້ປຸ່ມສະໜັບສະໜູນໃນໜ້າກອງທຶນ.{" "}
-            </small>
-            <TxFeedback state={tx.state} d={d} />
-          </FieldGroup>
-        </Panel>
-      </div>
+            ) : null}
+          </Disclosure>
+        </>
+      )}
     </div>
   );
 }

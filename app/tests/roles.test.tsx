@@ -81,6 +81,9 @@ describe("permissions derive from contract role responses", () => {
     expect(
       screen.queryByRole("option", { name: "ເພີ່ມຜູ້ຮັບ" }),
     ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "ອັບເດດຂໍ້ມູນ (ສຳລັບຜູ້ຈັດການ)" }),
+    );
     expect(
       screen.getByRole("button", { name: "ບັນທຶກລິ້ງຂໍ້ມູນ" }),
     ).toBeEnabled();

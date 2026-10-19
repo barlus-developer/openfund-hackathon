@@ -1,3 +1,5 @@
+import { RefreshCw, ArrowDownLeft, ArrowUpRight, FileText } from "lucide-react";
+import { Disclosure, PageHeader } from "@/components/patterns";
 import { eventLabels } from "@/app/labels";
 import { useActivity } from "@/hooks/useActivity";
 import { Button } from "@/components/ui/button";
@@ -15,90 +17,111 @@ import {
 } from "@/web3/deployments";
 import { useFundContext } from "@/features/funds/FundLayout";
 import { Link } from "react-router-dom";
-import { ofl } from "@/lib/amount";
+import { formatOfl } from "@/lib/amount";
 import type { Activity as Event } from "@/web3/events";
 export function ScanControls({ q }: { q: ReturnType<typeof useActivity> }) {
   return (
-    <div className="stack">
-      <small>
-        {q.coverage
-          ? `ໂຫຼດຮອດບັນທຶກ ${q.coverage.to} / ${q.coverage.head}. ${q.hasNextPage ? "ຍັງໂຫຼດບໍ່ຄົບ. ກົດໂຫຼດເພີ່ມເພື່ອເບິ່ງລາຍການອື່ນ." : "ໂຫຼດຮອດຂໍ້ມູນລ່າສຸດແລ້ວ. ກົດໂຫຼດໃໝ່ເພື່ອອັບເດດ."}`
-          : "ກຳລັງໂຫຼດປະຫວັດເປັນຊ່ວງ. ສາມາດໂຫຼດເພີ່ມເພື່ອເບິ່ງລາຍການອື່ນ."}
-      </small>
-      <div className="flex gap-2 flex-wrap">
-        <Button
-          variant="outline"
-          disabled={q.isFetching}
-          onClick={() => q.refetch()}
-        >
-          {" "}
-          ໂຫຼດຂໍ້ມູນໃໝ່{" "}
-        </Button>
-        {q.hasNextPage ? (
+    <div className="flex min-w-0 flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground" role="status">
+          {q.isFetching
+            ? "ກຳລັງໂຫຼດປະຫວັດ…"
+            : q.hasNextPage
+              ? "ປະຫວັດຍັງໂຫຼດບໍ່ຄົບ · ໂຫຼດເພີ່ມເພື່ອເບິ່ງລາຍການອື່ນ"
+              : "ປະຫວັດທີ່ໂຫຼດແລ້ວ"}
+        </p>
+        <div className="flex flex-wrap gap-2">
           <Button
-            disabled={q.isFetchingNextPage}
-            onClick={() => q.fetchNextPage()}
+            variant="ghost"
+            disabled={q.isFetching}
+            onClick={() => q.refetch()}
           >
-            {" "}
-            ໂຫຼດປະຫວັດເພີ່ມ{" "}
+            <RefreshCw data-icon="inline-start" aria-hidden="true" />
+            ໂຫຼດໃໝ່
           </Button>
-        ) : null}
-        {q.isFetching ? (
-          <Button variant="outline" onClick={q.cancel}>
-            {" "}
-            ຢຸດການໂຫຼດ{" "}
-          </Button>
-        ) : null}
+          {q.hasNextPage ? (
+            <Button
+              variant="outline"
+              disabled={q.isFetching}
+              onClick={() => q.fetchNextPage()}
+            >
+              ໂຫຼດປະຫວັດເພີ່ມ
+            </Button>
+          ) : null}
+          {q.isFetching ? (
+            <Button variant="ghost" onClick={q.cancel}>
+              ຢຸດການໂຫຼດ
+            </Button>
+          ) : null}
+        </div>
       </div>
       <ErrorNotice error={q.error} />
     </div>
   );
 }
+
 export function EventRow({ event, d }: { event: Event; d: Deployment }) {
   const args = event.args;
+  const actor = String(
+    args.donor ||
+      args.approver ||
+      args.recipient ||
+      args.manager ||
+      args.proposer ||
+      args.author ||
+      "",
+  );
+  const Icon =
+    event.eventName === "DonationReceived"
+      ? ArrowDownLeft
+      : event.eventName === "PayoutExecuted"
+        ? ArrowUpRight
+        : FileText;
   return (
-    <div className="activity-row">
-      <div>
-        <strong>{eventLabels[event.eventName] ?? "ອັບເດດກອງທຶນ"}</strong>
-        <p>
-          {args.fundId !== undefined ? (
-            <Link to={fundPath(d, String(args.fundId))}>
-              {" "}
-              ກອງທຶນ # {String(args.fundId)} ·{" "}
-            </Link>
+    <article className="flex min-w-0 gap-4 border-b py-5 last:border-0">
+      <Icon
+        className="mt-1 size-5 shrink-0 text-muted-foreground"
+        aria-hidden="true"
+      />
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <h3 className="text-sm font-medium">
+            {eventLabels[event.eventName] ?? "ອັບເດດກອງທຶນ"}
+          </h3>
+          {args.amount !== undefined ? (
+            <strong className="break-all text-base tabular-nums">
+              {formatOfl(args.amount as bigint)} OFL
+            </strong>
           ) : null}
-          {args.amount !== undefined
-            ? `${ofl(args.amount as bigint)} OFL · `
-            : ""}{" "}
-          ບັນທຶກ {event.blockNumber.toString()}
-        </p>
-        <code>
-          {String(
-            args.donor ||
-              args.approver ||
-              args.recipient ||
-              args.manager ||
-              args.proposer ||
-              args.author ||
-              "",
-          )}
-        </code>
-        {args.title ? <p>{String(args.title)}</p> : null}
+        </div>
+        {args.fundId !== undefined ? (
+          <Link
+            to={fundPath(d, String(args.fundId))}
+            className="inline-flex min-h-11 items-center self-start text-sm text-primary hover:underline"
+          >
+            ກອງທຶນ #{String(args.fundId)}
+          </Link>
+        ) : null}
+        {args.title ? <p className="text-sm">{String(args.title)}</p> : null}
         {typeof args.proposalId === "bigint" &&
         args.proposalId > 0n &&
         args.fundId !== undefined ? (
           <Link
+            className="inline-flex min-h-11 items-center self-start text-sm text-primary hover:underline"
             to={
               fundPath(d, String(args.fundId)) +
               `/proposals/${String(args.proposalId)}`
             }
           >
-            {" "}
-            ຂໍ້ສະເໜີ # {String(args.proposalId)} ↗
+            ຂໍ້ສະເໜີ #{String(args.proposalId)} ↗
           </Link>
         ) : null}
-        <details>
-          <summary> ລາຍລະອຽດທາງເຕັກນິກ </summary>
+        <Disclosure title="ລາຍລະອຽດລາຍການ">
+          {actor ? <code>{actor}</code> : null}
+          <TxHash d={d} hash={event.transactionHash} />
+          <small>
+            ບັນທຶກ {event.blockNumber.toString()} · ລາຍການ #{event.logIndex}
+          </small>
           <pre className="summary-box">
             {JSON.stringify(
               args,
@@ -106,15 +129,12 @@ export function EventRow({ event, d }: { event: Event; d: Deployment }) {
               2,
             )}
           </pre>
-        </details>
+        </Disclosure>
       </div>
-      <div>
-        <TxHash d={d} hash={event.transactionHash} />
-        <small> ລາຍການ # {event.logIndex}</small>
-      </div>
-    </div>
+    </article>
   );
 }
+
 export function ActivityFeed({
   d,
   fundId,
@@ -141,11 +161,8 @@ export function ActivityFeed({
     .slice()
     .reverse();
   return (
-    <Panel
-      title={payoutsOnly ? "ປະຫວັດການຈ່າຍເງິນ" : "ປະຫວັດການດຳເນີນງານສາທາລະນະ"}
-      description="ຕິດຕາມການສະໜັບສະໜູນ ການອະນຸມັດ ແລະການໃຊ້ເງິນຂອງກອງທຶນ"
-    >
-      <div className="stack">
+    <Panel title={payoutsOnly ? "ປະຫວັດການຈ່າຍເງິນ" : "ປະຫວັດກອງທຶນ"}>
+      <div className="flex min-w-0 flex-col gap-6">
         <ScanControls q={q} />
         {q.isLoading ? (
           <Loading />
@@ -174,7 +191,13 @@ export function FundPayouts() {
 }
 export function GlobalActivity() {
   return defaultDeployment ? (
-    <ActivityFeed d={defaultDeployment} />
+    <>
+      <PageHeader
+        title="ປະຫວັດການດຳເນີນງານ"
+        description="ການສະໜັບສະໜູນ ແລະການໃຊ້ເງິນຂອງກອງທຶນ."
+      />
+      <ActivityFeed d={defaultDeployment} />
+    </>
   ) : (
     <EmptyState description="ລະບົບຍັງບໍ່ພ້ອມໃຊ້ງານ. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ." />
   );

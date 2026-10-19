@@ -1,3 +1,4 @@
+import { Disclosure } from "@/components/patterns";
 import { useState } from "react";
 import { useConnection } from "wagmi";
 import { encodeFunctionData, getAddress, zeroAddress, zeroHash } from "viem";
@@ -7,7 +8,7 @@ import { openFundAbi } from "@/web3/generated/OpenFund";
 import { actionLabels } from "@/app/labels";
 import { actionNames } from "@/web3/reads";
 import { clientFor } from "@/web3/deployments";
-import { amount, ofl } from "@/lib/amount";
+import { amount, formatOfl } from "@/lib/amount";
 import { walletAddress } from "@/features/funds/creation";
 import {
   Panel,
@@ -116,91 +117,123 @@ export function Manage() {
     }
   }
   return (
-    <div className="detail-grid">
-      <div className="stack">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
+      <div className="flex min-w-0 flex-col gap-6">
         <Panel title="ສະເໜີການດຳເນີນງານ">
           <FieldGroup>
-            <Connect chainId={d.chainId} />
+            {!c.address || c.chainId !== d.chainId ? (
+              <Connect chainId={d.chainId} />
+            ) : null}
             {!manager && !approver ? (
               <Notice title="ສິດເບິ່ງຂໍ້ມູນ">
                 {" "}
-                ເຊື່ອມກະເປົາຜູ້ຈັດການເພື່ອສະເໜີການດຳເນີນງານ
-                ຫຼືກະເປົາຜູ້ອະນຸມັດເພື່ອປັບຜູ້ຮັບຜິດຊອບ.{" "}
+                ໃຊ້ກະເປົາຜູ້ຈັດການ ຫຼືຜູ້ອະນຸມັດເພື່ອສົ່ງຂໍ້ສະເໜີ.{" "}
               </Notice>
             ) : null}
-            <SelectField
-              label="ສິ່ງທີ່ຕ້ອງການສະເໜີ"
-              value={selectedKind}
-              onChange={setKind}
-              options={
-                options.length
-                  ? options.map(
-                      ([value]) =>
-                        [value, actionLabels[Number(value)]] as [
-                          string,
-                          string,
-                        ],
-                    )
-                  : [["0", "ຈ່າຍເງິນ (ສຳລັບຜູ້ຈັດການ)"]]
-              }
-            />
-            {![4, 7].includes(+selectedKind) ? (
-              <TextField
-                label={
-                  +selectedKind === 0
-                    ? t("recipient")
-                    : "ທີ່ຢູ່ກະເປົາທີ່ກ່ຽວຂ້ອງ"
-                }
-                value={target}
-                onChange={setTarget}
-              />
+            {manager || approver ? (
+              <>
+                <SelectField
+                  label="ສິ່ງທີ່ຕ້ອງການສະເໜີ"
+                  value={selectedKind}
+                  onChange={setKind}
+                  options={
+                    options.length
+                      ? options.map(
+                          ([value]) =>
+                            [value, actionLabels[Number(value)]] as [
+                              string,
+                              string,
+                            ],
+                        )
+                      : [["0", "ຈ່າຍເງິນ (ສຳລັບຜູ້ຈັດການ)"]]
+                  }
+                />
+                {![4, 7].includes(+selectedKind) ? (
+                  <TextField
+                    label={
+                      +selectedKind === 0
+                        ? t("recipient")
+                        : "ທີ່ຢູ່ກະເປົາທີ່ກ່ຽວຂ້ອງ"
+                    }
+                    value={target}
+                    onChange={setTarget}
+                  />
+                ) : null}
+                {+selectedKind === 0 ? (
+                  <TextField
+                    label={t("amount")}
+                    value={sum}
+                    onChange={setSum}
+                  />
+                ) : null}
+                {+selectedKind === 4 ? (
+                  <TextField
+                    label="ຈຳນວນອະນຸມັດໃໝ່"
+                    value={value}
+                    onChange={setValue}
+                  />
+                ) : null}
+                <TextField
+                  label={t("purpose")}
+                  value={purpose}
+                  onChange={setPurpose}
+                  multiline
+                />
+                <TextField
+                  label="ລິ້ງຫຼັກຖານ (ຖ້າມີ)"
+                  value={uri}
+                  onChange={setURI}
+                />
+                <Disclosure title="ລະຫັດຢືນຢັນຫຼັກຖານ (ຖ້າມີ)">
+                  <TextField
+                    label="ລະຫັດຢືນຢັນຫຼັກຖານ (ຖ້າມີ)"
+                    value={hash}
+                    onChange={setHash}
+                  />
+                </Disclosure>
+                <Notice title="ກວດສອບກ່ອນສົ່ງ">
+                  <dl className="data-list">
+                    <dt>ລາຍການ</dt>
+                    <dd>{actionLabels[+selectedKind]}</dd>
+                    {![4, 7].includes(+selectedKind) && target ? (
+                      <>
+                        <dt>ກະເປົາ</dt>
+                        <dd>
+                          <code>{target}</code>
+                        </dd>
+                      </>
+                    ) : null}
+                    {+selectedKind === 0 ? (
+                      <>
+                        <dt>ຈຳນວນ</dt>
+                        <dd>{sum || "0"} OFL</dd>
+                      </>
+                    ) : null}
+                    {+selectedKind === 4 ? (
+                      <>
+                        <dt>ຈຳນວນອະນຸມັດໃໝ່</dt>
+                        <dd>{value || "—"}</dd>
+                      </>
+                    ) : null}
+                  </dl>
+                  <p>
+                    {" "}
+                    ຍອດຄົງເຫຼືອລ່າສຸດ {formatOfl(row.fund.balance)} OFL.
+                    ຈຳນວນອະນຸມັດ {row.fund.threshold}/{row.approvers.length}.{" "}
+                    {+selectedKind === 0
+                      ? "ການສະເໜີບໍ່ໄດ້ຈອງຍອດເງິນໄວ້."
+                      : "ລໍຖ້າ 24 ຊົ່ວໂມງຫຼັງອະນຸມັດຄົບ."}
+                  </p>
+                  {+selectedKind === 7 ? (
+                    <p>
+                      {" "}
+                      ການເລີ່ມປິດຈະຢຸດຮັບສະໜັບສະໜູນຖາວອນ ແລະຍົກເລີກຂໍ້ສະເໜີເດີມ.
+                      ການຈ່າຍເງິນທີ່ເຫຼືອຕ້ອງອະນຸມັດຕ່າງຫາກ.{" "}
+                    </p>
+                  ) : null}
+                </Notice>
+              </>
             ) : null}
-            {+selectedKind === 0 ? (
-              <TextField label={t("amount")} value={sum} onChange={setSum} />
-            ) : null}
-            {+selectedKind === 4 ? (
-              <TextField
-                label="ຈຳນວນອະນຸມັດໃໝ່"
-                value={value}
-                onChange={setValue}
-              />
-            ) : null}
-            <TextField
-              label={t("purpose")}
-              value={purpose}
-              onChange={setPurpose}
-              multiline
-            />
-            <TextField
-              label="ລິ້ງຫຼັກຖານ (ຖ້າມີ)"
-              value={uri}
-              onChange={setURI}
-            />
-            <TextField
-              label="ລະຫັດຢືນຢັນຫຼັກຖານ (ຖ້າມີ)"
-              value={hash}
-              onChange={setHash}
-            />
-            <Notice title="ກວດສອບກ່ອນສົ່ງ">
-              {actionLabels[+selectedKind]} · ກະເປົາ {target || "ບໍ່ມີ"} ·{" "}
-              {sum || "0"} OFL · ຈຳນວນອະນຸມັດໃໝ່ {value || "—"}
-              <p>
-                {" "}
-                ຍອດຄົງເຫຼືອລ່າສຸດ {ofl(row.fund.balance)} OFL. ຈຳນວນອະນຸມັດ{" "}
-                {row.fund.threshold}/{row.approvers.length} . ການອະນຸມັດຮຸ່ນ{" "}
-                {row.fund.governanceVersion.toString()}.{" "}
-                {+selectedKind === 0
-                  ? "ການສະເໜີບໍ່ໄດ້ຈອງຍອດເງິນໄວ້."
-                  : "ລໍຖ້າ 24 ຊົ່ວໂມງຫຼັງອະນຸມັດຄົບ."}
-              </p>
-              {+selectedKind === 7 ? (
-                <p>
-                  {" "}
-                  ການເລີ່ມປິດຈະຢຸດຮັບສະໜັບສະໜູນຖາວອນ ແລະຍົກເລີກຂໍ້ສະເໜີເດີມ.
-                  ການຈ່າຍເງິນທີ່ເຫຼືອຕ້ອງອະນຸມັດຕ່າງຫາກ.{" "}
-                </p>
-              ) : null}
-            </Notice>
             <ErrorNotice error={error} />
             <Button
               disabled={
@@ -220,8 +253,8 @@ export function Manage() {
         </Panel>
         <ClosureFinalize />
       </div>
-      <div className="stack">
-        <Panel title="ອັບເດດຂໍ້ມູນ (ສຳລັບຜູ້ຈັດການ)">
+      <div className="flex min-w-0 flex-col gap-6">
+        <Disclosure title="ອັບເດດຂໍ້ມູນ (ສຳລັບຜູ້ຈັດການ)">
           <FieldGroup>
             <TextField
               label="ລິ້ງຂໍ້ມູນເພີ່ມເຕີມ"
@@ -229,6 +262,7 @@ export function Manage() {
               onChange={setMetadata}
             />
             <Button
+              variant="outline"
               disabled={
                 !manager ||
                 tx.busy ||
@@ -255,7 +289,7 @@ export function Manage() {
               ລິ້ງທີ່ບໍ່ມີລະຫັດຢືນຢັນໄຟລ໌ຈະກວດການປ່ຽນແປງເນື້ອຫາບໍ່ໄດ້.{" "}
             </small>
           </FieldGroup>
-        </Panel>
+        </Disclosure>
         <Notice title="ການຈ່າຍເງິນຕ້ອງຜ່ານການອະນຸມັດ">
           {" "}
           ຜູ້ຈັດການສະເໜີ ຜູ້ອະນຸມັດຮ່ວມຕັດສິນໃຈ ແລ້ວຈຶ່ງດຳເນີນການໄດ້.

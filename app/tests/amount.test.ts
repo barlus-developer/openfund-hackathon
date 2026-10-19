@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { amount, donationData, positiveId } from "../src/lib/amount";
+import { amount, formatOfl, donationData, positiveId } from "../src/lib/amount";
 import { encodeFunctionData, decodeFunctionData } from "viem";
 import { tokenAbi } from "../src/web3/generated/OFLToken";
 describe("exact token accounting", () => {
@@ -8,6 +8,14 @@ describe("exact token accounting", () => {
     expect(amount("9007199254740993.123456789012345678")).toBe(
       9007199254740993123456789012345678n,
     );
+  });
+  it("groups displayed amounts while preserving all 18 decimals", () => {
+    expect(formatOfl(amount("9007199254740993.123456789012345678"))).toBe(
+      "9,007,199,254,740,993.123456789012345678",
+    );
+    expect(formatOfl(1n)).toBe("0.000000000000000001");
+    expect(formatOfl(0n)).toBe("0");
+    expect(formatOfl(undefined)).toBe("—");
   });
   it.each(["0", "-1", "1e18", "1.0000000000000000001", "NaN", ""])(
     "rejects invalid amount %s",

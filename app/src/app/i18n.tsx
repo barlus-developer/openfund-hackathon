@@ -11,7 +11,7 @@ const dictionary = {
   governance: ["ການອະນຸມັດ", "Governance"],
   proposals: ["ຂໍ້ສະເໜີ", "Proposals"],
   payouts: ["ການຈ່າຍເງິນ", "Payouts"],
-  transactions: ["ທຸລະກຳ", "Transactions"],
+  transactions: ["ປະຫວັດລາຍການ", "Transactions"],
   reports: ["ລາຍງານ", "Reports"],
   manage: ["ຈັດການກອງທຶນ", "Manage fund"],
   overview: ["ພາບລວມ", "Overview"],
@@ -68,10 +68,7 @@ const dictionary = {
   amount: ["ຈຳນວນ OFL", "OFL amount"],
   recipient: ["ທີ່ຢູ່ຜູ້ຮັບ", "Recipient address"],
   purpose: ["ຈຸດປະສົງ", "Purpose"],
-  wrongChain: [
-    "ເຄືອຂ່າຍບໍ່ຖືກຕ້ອງ · ປ່ຽນເຄືອຂ່າຍ",
-    "Wrong chain · Switch network",
-  ],
+  wrongChain: ["ປ່ຽນເຄືອຂ່າຍ", "Wrong chain · Switch network"],
   refundPolicy: [
     "ຄືນເງິນ 100% ຖ້າບໍ່ເຖິງເປົ້າໝາຍພາຍໃນກຳນົດ",
     "100% self-claim refund if the target is missed at the deadline.",

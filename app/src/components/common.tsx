@@ -1,7 +1,17 @@
+import { Spinner } from "./ui/spinner";
+import { CheckCircle2, CircleAlert, FolderOpen, Info } from "lucide-react";
+import { Disclosure } from "./patterns";
 import { useId, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
-import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "./ui/empty";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyMedia,
+  EmptyContent,
+} from "./ui/empty";
 import { Skeleton } from "./ui/skeleton";
 import {
   Card,
@@ -28,7 +38,8 @@ export function Notice({
   title?: string;
 }) {
   return (
-    <Alert>
+    <Alert role="note">
+      <Info aria-hidden="true" />
       <AlertTitle>{title}</AlertTitle>
       <AlertDescription>{children}</AlertDescription>
     </Alert>
@@ -36,32 +47,71 @@ export function Notice({
 }
 export function ErrorNotice({ error }: { error: unknown }) {
   return error ? (
-    <Alert variant="destructive">
+    <Alert variant="destructive" role="alert">
+      <CircleAlert aria-hidden="true" />
       <AlertTitle> ບໍ່ສາມາດດຳເນີນການໄດ້ </AlertTitle>
       <AlertDescription>{friendlyError(error)}</AlertDescription>
     </Alert>
   ) : null;
 }
-export function Loading() {
+export function Loading({ cards = false }: { cards?: boolean }) {
   const { t } = useLanguage();
   return (
-    <div aria-live="polite" className="flex flex-col gap-4">
-      <p>{t("loading")}</p>
-      <Skeleton className="h-24 w-full" />
-      <Skeleton className="h-24 w-full" />
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex min-w-0 flex-col gap-5"
+    >
+      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Spinner />
+        {t("loading")}
+      </p>
+      {cards ? (
+        <div
+          aria-hidden="true"
+          className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {[0, 1, 2].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="mb-4 size-11 rounded-xl" />
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="mt-3 h-3 w-full" />
+                <Skeleton className="mt-1 h-3 w-4/5" />
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                <Skeleton className="h-7 w-1/2" />
+                <Skeleton className="h-2 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
-export function EmptyState({ description }: { description?: string }) {
+export function EmptyState({
+  title,
+  description,
+  action,
+}: {
+  title?: string;
+  description?: string;
+  action?: ReactNode;
+}) {
   const { t } = useLanguage();
   return (
     <Empty>
       <EmptyHeader>
-        <EmptyTitle>{t("empty")}</EmptyTitle>
-        <EmptyDescription>
-          {description || "ລອງໂຫຼດເພີ່ມ ໂຫຼດໃໝ່ ຫຼືປ່ຽນຕົວເລືອກການຄົ້ນຫາ."}
-        </EmptyDescription>
+        <EmptyMedia variant="icon">
+          <FolderOpen aria-hidden="true" />
+        </EmptyMedia>
+        <EmptyTitle>{title || t("empty")}</EmptyTitle>
+        {description ? (
+          <EmptyDescription>{description}</EmptyDescription>
+        ) : null}
       </EmptyHeader>
+      {action ? <EmptyContent>{action}</EmptyContent> : null}
     </Empty>
   );
 }
@@ -92,6 +142,7 @@ export function TextField({
   multiline = false,
   required = false,
   type = "text",
+  inputMode,
 }: {
   label: string;
   value: string;
@@ -100,6 +151,7 @@ export function TextField({
   multiline?: boolean;
   required?: boolean;
   type?: string;
+  inputMode?: "decimal" | "numeric";
 }) {
   const id = useId();
   return (
@@ -108,6 +160,7 @@ export function TextField({
       {multiline ? (
         <Textarea
           id={id}
+          aria-describedby={help ? `${id}-help` : undefined}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           required={required}
@@ -115,14 +168,18 @@ export function TextField({
       ) : (
         <Input
           id={id}
+          aria-describedby={help ? `${id}-help` : undefined}
           type={type}
+          inputMode={inputMode}
           autoComplete={type === "password" ? "off" : undefined}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           required={required}
         />
       )}{" "}
-      {help ? <FieldDescription>{help}</FieldDescription> : null}
+      {help ? (
+        <FieldDescription id={`${id}-help`}>{help}</FieldDescription>
+      ) : null}
     </Field>
   );
 }
@@ -191,18 +248,52 @@ export function TxHash({ hash, d }: { hash: string; d: Deployment }) {
   );
 }
 export function TxFeedback({ state, d }: { state: TxState; d: Deployment }) {
-  return state.stage ? (
-    <div className="flex flex-col gap-3" aria-live="polite">
-      <Notice title={transactionLabels[state.stage] ?? "ສະຖານະລາຍການ"}>
-        {state.stage === "Confirmed"
-          ? "ລາຍການຂອງເຈົ້າຖືກຢືນຢັນສຳເລັດແລ້ວ."
-          : state.error ||
-            "ກະລຸນາເບິ່ງຄຳຂໍໃນ MetaMask ແລະລໍຖ້າລະບົບຢືນຢັນສຳເລັດ."}
-        {state.gas ? (
-          <p> ຄ່າປະເມີນການໃຊ້ເຄືອຂ່າຍ: {state.gas.toString()}</p>
-        ) : null}
-        {state.hash ? <TxHash hash={state.hash} d={d} /> : null}
-      </Notice>
+  if (!state.stage) return null;
+  const failed = ["Rejected", "Reverted", "Failed"].includes(state.stage);
+  const pending = [
+    "Preparing",
+    "Awaiting Wallet",
+    "Submitted",
+    "Pending",
+    "Replaced",
+  ].includes(state.stage);
+  const message =
+    state.stage === "Confirmed"
+      ? "ລາຍການຂອງເຈົ້າຖືກຢືນຢັນສຳເລັດແລ້ວ."
+      : state.error ||
+        (state.stage === "Awaiting Wallet"
+          ? "ກວດສອບຍອດ ແລະຄ່າທຳນຽມໃນ MetaMask ແລ້ວຢືນຢັນ."
+          : failed
+            ? "ລາຍການຍັງບໍ່ສຳເລັດ. ກວດສອບປະຫວັດກ່ອນລອງໃໝ່."
+            : "ກຳລັງກວດສອບ ແລະລໍຖ້າການຢືນຢັນ.");
+  return (
+    <div aria-live="polite">
+      <Alert
+        variant={failed ? "destructive" : "default"}
+        role={failed ? "alert" : "status"}
+      >
+        {failed ? (
+          <CircleAlert aria-hidden="true" />
+        ) : pending ? (
+          <Spinner />
+        ) : (
+          <CheckCircle2 aria-hidden="true" />
+        )}
+        <AlertTitle>
+          {transactionLabels[state.stage] ?? "ສະຖານະລາຍການ"}
+        </AlertTitle>
+        <AlertDescription>
+          <p>{message}</p>
+          {state.hash || state.gas ? (
+            <Disclosure title="ລາຍລະອຽດລາຍການ">
+              {state.gas ? (
+                <p>ຄ່າປະເມີນການໃຊ້ເຄືອຂ່າຍ: {state.gas.toString()}</p>
+              ) : null}
+              {state.hash ? <TxHash hash={state.hash} d={d} /> : null}
+            </Disclosure>
+          ) : null}
+        </AlertDescription>
+      </Alert>
     </div>
-  ) : null;
+  );
 }

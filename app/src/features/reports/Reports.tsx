@@ -1,3 +1,5 @@
+import { Disclosure } from "@/components/patterns";
+import { Connect } from "@/features/wallet/Connect";
 import { useState } from "react";
 import { useConnection } from "wagmi";
 import { encodeFunctionData } from "viem";
@@ -12,6 +14,7 @@ import {
   Notice,
   TextField,
   EmptyState,
+  Loading,
   ErrorNotice,
   TxFeedback,
   TxHash,
@@ -67,14 +70,16 @@ export function Reports() {
     }
   }
   return (
-    <div className="detail-grid">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       <Panel
         title={t("reports")}
-        description="ເອກະສານຈາກກອງທຶນ ທີ່ທຸກຄົນເປີດເບິ່ງໄດ້. ເນື້ອຫາຍັງບໍ່ຜ່ານການກວດສອບອິດສະຫຼະ."
+        description="ລາຍງານຈາກກອງທຶນ · ຍັງບໍ່ຜ່ານການກວດສອບອິດສະຫຼະ."
       >
-        <div className="stack">
+        <div className="flex min-w-0 flex-col gap-6">
           <ScanControls q={q} />
-          {reports.length ? (
+          {q.isLoading ? (
+            <Loading />
+          ) : reports.length ? (
             reports.map((e) => (
               <ReportItem
                 key={`${e.transactionHash}:${e.logIndex}`}
@@ -82,54 +87,69 @@ export function Reports() {
                 d={d}
               />
             ))
-          ) : (
-            <EmptyState description="ຍັງບໍ່ພົບລາຍງານໃນຂໍ້ມູນທີ່ໂຫຼດ." />
-          )}
+          ) : !q.error ? (
+            <EmptyState
+              title="ຍັງບໍ່ມີລາຍງານ"
+              description="ກັບມາເບິ່ງຄວາມຄືບໜ້າພາຍຫຼັງ."
+            />
+          ) : null}
         </div>
       </Panel>
-      <Panel title="ເຜີຍແຜ່ລາຍງານ (ສຳລັບຜູ້ຈັດການ)">
-        <FieldGroup>
-          <Notice title="ປົກປ້ອງຜູ້ຮັບການຊ່ວຍເຫຼືອ">
-            {t("privacy")} ລິ້ງໄຟລ໌ບໍ່ໄດ້ຮັບຮອງວ່າໄຟລ໌ຈະຖືກເກັບໄວ້ຖາວອນ.{" "}
-          </Notice>
-          <TextField label="ຫົວຂໍ້ລາຍງານ" value={title} onChange={setTitle} />
-          <TextField
-            label="ໝາຍເລກການຈ່າຍເງິນ (0 ສຳລັບລາຍງານທົ່ວໄປ)"
-            value={pid}
-            onChange={setPid}
-          />
-          <TextField
-            label="ລິ້ງ ຫຼືລະຫັດເອກະສານ IPFS"
-            value={uri}
-            onChange={setURI}
-          />
-          <TextField
-            label="ລະຫັດຢືນຢັນເອກະສານ"
-            value={hash}
-            onChange={setHash}
-          />
-          <IPFSUpload
-            onHash={setHash}
-            onUploaded={(nextURI, nextHash) => {
-              setURI(nextURI);
-              setHash(nextHash);
-            }}
-          />
-          <ErrorNotice error={error} />
-          <Button
-            disabled={!manager || tx.busy || c.chainId !== d.chainId}
-            onClick={publish}
-          >
-            {" "}
-            ເຜີຍແຜ່ລາຍງານ{" "}
-          </Button>
-          <TxFeedback state={tx.state} d={d} />
-        </FieldGroup>
-      </Panel>
+      {manager ? (
+        <Disclosure title="ເພີ່ມລາຍງານໃໝ່" defaultOpen={!reports.length}>
+          <FieldGroup>
+            <Notice title="ປົກປ້ອງຜູ້ຮັບການຊ່ວຍເຫຼືອ">
+              {t("privacy")} ລິ້ງໄຟລ໌ບໍ່ໄດ້ຮັບຮອງວ່າໄຟລ໌ຈະຖືກເກັບໄວ້ຖາວອນ.{" "}
+            </Notice>
+            <TextField label="ຫົວຂໍ້ລາຍງານ" value={title} onChange={setTitle} />
+            <TextField
+              label="ໝາຍເລກການຈ່າຍເງິນ (0 ສຳລັບລາຍງານທົ່ວໄປ)"
+              value={pid}
+              onChange={setPid}
+            />
+            <TextField
+              label="ລິ້ງ ຫຼືລະຫັດເອກະສານ IPFS"
+              value={uri}
+              onChange={setURI}
+            />
+            <TextField
+              label="ລະຫັດຢືນຢັນເອກະສານ"
+              value={hash}
+              onChange={setHash}
+            />
+            <Disclosure title="ອັບໂຫຼດເອກະສານໃໝ່">
+              <IPFSUpload
+                onHash={setHash}
+                onUploaded={(nextURI, nextHash) => {
+                  setURI(nextURI);
+                  setHash(nextHash);
+                }}
+              />
+            </Disclosure>
+            <ErrorNotice error={error} />
+            <Button
+              disabled={!manager || tx.busy || c.chainId !== d.chainId}
+              onClick={publish}
+            >
+              {" "}
+              ເຜີຍແຜ່ລາຍງານ{" "}
+            </Button>
+            <TxFeedback state={tx.state} d={d} />
+          </FieldGroup>
+        </Disclosure>
+      ) : (
+        <Disclosure title="ສຳລັບຜູ້ຈັດການ">
+          <p className="text-sm text-muted-foreground">
+            ໃຊ້ກະເປົາຜູ້ຈັດການເພື່ອເຜີຍແຜ່ລາຍງານ.
+          </p>
+          <Connect chainId={d.chainId} />
+        </Disclosure>
+      )}
     </div>
   );
 }
 function ReportItem({ event, d }: { event: Activity; d: Deployment }) {
+  const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(""),
     [error, setError] = useState<unknown>();
   let url;
@@ -139,8 +159,8 @@ function ReportItem({ event, d }: { event: Activity; d: Deployment }) {
     /* Keep invalid refs readable without making them links. */
   }
   return (
-    <div className="stack">
-      <h3>{String(event.args.title)}</h3>
+    <div className="flex min-w-0 flex-col gap-4 border-b py-5 last:border-0">
+      <h3 className="text-base font-semibold">{String(event.args.title)}</h3>
       <p>
         {" "}
         ຂໍ້ສະເໜີ # {String(event.args.proposalId)} · ບັນທຶກ{" "}
@@ -154,32 +174,38 @@ function ReportItem({ event, d }: { event: Activity; d: Deployment }) {
       ) : (
         <code>{String(event.args.contentURI)}</code>
       )}
-      <code className="hash">{String(event.args.contentHash)}</code>
-      <Button
-        variant="outline"
-        onClick={async () => {
-          setResult("ກຳລັງໂຫຼດ…");
-          setError(undefined);
-          try {
-            const r = await verifyContent(
-              String(event.args.contentURI),
-              event.args.contentHash as `0x${string}`,
-            );
-            setResult(
-              `${r.match ? "ເອກະສານກົງກັນ" : "ເອກະສານບໍ່ກົງກັນ"} · ${r.bytes} ໄບຕ໌ · ${r.actual}`,
-            );
-          } catch (e) {
-            setError(e);
-            setResult("");
-          }
-        }}
-      >
-        {" "}
-        ກວດສອບໄຟລ໌ເອກະສານ{" "}
-      </Button>
-      <small>{result}</small>
-      <ErrorNotice error={error} />
-      <TxHash d={d} hash={event.transactionHash} />
+      <Disclosure title="ກວດສອບເອກະສານ">
+        <code className="hash">{String(event.args.contentHash)}</code>
+        <Button
+          variant="outline"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            setResult("ກຳລັງໂຫຼດ…");
+            setError(undefined);
+            try {
+              const r = await verifyContent(
+                String(event.args.contentURI),
+                event.args.contentHash as `0x${string}`,
+              );
+              setResult(
+                `${r.match ? "ເອກະສານກົງກັນ" : "ເອກະສານບໍ່ກົງກັນ"} · ${r.bytes} ໄບຕ໌ · ${r.actual}`,
+              );
+            } catch (e) {
+              setError(e);
+              setResult("");
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {" "}
+          {busy ? "ກຳລັງກວດສອບ…" : "ກວດສອບໄຟລ໌ເອກະສານ"}
+        </Button>
+        <small role="status">{result}</small>
+        <ErrorNotice error={error} />
+        <TxHash d={d} hash={event.transactionHash} />
+      </Disclosure>
     </div>
   );
 }

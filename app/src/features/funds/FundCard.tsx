@@ -1,12 +1,5 @@
 import { Link } from "react-router-dom";
-import {
-  BookOpen,
-  HeartPulse,
-  Rocket,
-  ShieldCheck,
-  BriefcaseBusiness,
-  ArrowUpRight,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -17,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { ofl, date } from "@/lib/amount";
+import { formatOfl } from "@/lib/amount";
 import { fundPath, type Deployment } from "@/web3/deployments";
 import { type FundRow } from "@/web3/reads";
 import { fundStatusLabels, categoryLabel } from "@/app/labels";
@@ -36,73 +29,80 @@ export function Policy({ row }: { row: FundRow }) {
     </>
   );
 }
-export function FundCard({ row, d }: { row: FundRow; d: Deployment }) {
-  const { t } = useLanguage();
+export function FundProgress({
+  row,
+  showLabel = true,
+}: {
+  row: FundRow;
+  showLabel?: boolean;
+}) {
   const f = row.fund;
-  const Icon =
-    f.category === "Healthcare"
-      ? HeartPulse
-      : f.category === "Education"
-        ? BookOpen
-        : f.category === "Business" || f.category === "ທຸລະກິດ"
-          ? BriefcaseBusiness
-          : Rocket;
-  const progress = f.config.fundingGoal
-    ? Number((f.totalRaised * 10000n) / f.config.fundingGoal) / 100
-    : 0;
+  const goal = f.config.fundingGoal;
+  const progress = goal ? Number((f.totalRaised * 10000n) / goal) / 100 : 0;
   return (
-    <Link to={fundPath(d, row.id)}>
-      <Card className="fund-card overflow-hidden h-full">
-        <div className="fund-card-top">
-          <Icon />
-          <Badge variant="outline">
-            {categoryLabel(f.category || "Projects")}
-          </Badge>
-        </div>
-        <CardHeader>
-          <div className="flex flex-wrap gap-2">
+    <div className="flex flex-col gap-3">
+      {showLabel ? (
+        <p className="text-sm text-muted-foreground">ຍອດສະໜັບສະໜູນ</p>
+      ) : null}
+      <p className="break-words text-2xl font-semibold tabular-nums">
+        {formatOfl(f.totalRaised)}{" "}
+        <span className="text-sm font-normal">OFL</span>
+      </p>
+      {goal > 0n ? (
+        <>
+          <Progress
+            aria-label="ຄວາມຄືບໜ້າການລະດົມທຶນ"
+            value={Math.min(100, Math.max(0, progress))}
+            max={100}
+          />
+          <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
+            <span>ເປົ້າໝາຍ {formatOfl(goal)} OFL</span>
+            <span>
+              {progress.toLocaleString("lo-LA", { maximumFractionDigits: 1 })}%
+            </span>
+          </div>
+        </>
+      ) : (
+        <p className="text-xs text-muted-foreground">ຮັບສະໜັບສະໜູນຕໍ່ເນື່ອງ</p>
+      )}
+    </div>
+  );
+}
+export function FundCard({ row, d }: { row: FundRow; d: Deployment }) {
+  const f = row.fund;
+  return (
+    <Link
+      to={fundPath(d, row.id)}
+      aria-label={`ເບິ່ງກອງທຶນ ${f.title}`}
+      className="group block h-full min-w-0 rounded-xl"
+    >
+      <Card className="h-full transition-colors group-hover:ring-primary/40 group-focus-visible:ring-primary">
+        <CardHeader className="gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs text-muted-foreground">
+              {categoryLabel(f.category || "Projects")}
+            </span>
             <Badge variant="secondary">{fundStatusLabels[row.status]}</Badge>
-            <Badge variant="outline">
-              {f.config.fundingMode === 0 ? "ມີເປົ້າໝາຍ" : "ຕໍ່ເນື່ອງ"}
-            </Badge>
           </div>
-          <CardTitle>{f.title}</CardTitle>
-          <CardDescription>{f.summary}</CardDescription>
+          <CardTitle as="h3">{f.title}</CardTitle>
+          <CardDescription className="line-clamp-2">
+            {f.summary}
+          </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <div>
-            <small>{t("raised")}</small>
-            <p className="m-0">
-              <strong>{ofl(f.totalRaised)} OFL</strong>
-              {f.config.fundingGoal > 0n ? (
-                <small> / {ofl(f.config.fundingGoal)}</small>
-              ) : null}
-            </p>
-          </div>
-          {f.config.fundingGoal > 0n ? (
-            <>
-              <Progress
-                aria-label="ຄວາມຄືບໜ້າການລະດົມທຶນ"
-                value={Math.min(100, progress)}
-                max={100}
-              />
-              <small>
-                {progress.toLocaleString("lo-LA", { maximumFractionDigits: 1 })}
-                % · {date(f.config.deadline)}
-              </small>
-            </>
-          ) : null}
-          <small>
-            <Policy row={row} />
-          </small>
+        <CardContent className="mt-auto">
+          <FundProgress row={row} />
         </CardContent>
-        <CardFooter className="flex justify-between">
-          <small>
-            <ShieldCheck className="inline-icon" /> {f.threshold}/
-            {row.approvers.length} ການອະນຸມັດ{" "}
-          </small>
-          <span className="text-link">
-            ເບິ່ງກອງທຶນ <ArrowUpRight />
+        <CardFooter className="flex flex-wrap justify-between gap-3">
+          <span className="text-xs text-muted-foreground">
+            {f.config.fundingGoal > 0n
+              ? new Date(Number(f.config.deadline) * 1000).toLocaleDateString(
+                  "lo-LA",
+                  { day: "numeric", month: "short", year: "numeric" },
+                )
+              : "ບໍ່ມີວັນສິ້ນສຸດ"}
+          </span>
+          <span className="inline-flex items-center gap-2 text-sm font-medium text-primary">
+            ເບິ່ງກອງທຶນ <ArrowRight className="size-4" aria-hidden="true" />
           </span>
         </CardFooter>
       </Card>

@@ -1,3 +1,4 @@
+import { PageHeader, ProgressSteps, Disclosure } from "@/components/patterns";
 import { friendlyError } from "@/lib/errors";
 import { stored, remember, forget } from "@/lib/storage";
 import { useState, useEffect } from "react";
@@ -29,12 +30,17 @@ export function CreateFund() {
   );
 }
 function Wizard() {
+  const connection = useConnection();
   const [version, setVersion] = useState(defaultDeployment!.version);
   const d = deployments.find((x) => x.version === version)!;
   const [draft, setDraft] = useState<Draft>(() => {
     try {
       const saved = JSON.parse(stored("ofl-draft-v1") || "null");
-      return saved ? { ...emptyDraft, ...saved } : emptyDraft;
+      return {
+        ...emptyDraft,
+        ...saved,
+        manager: saved?.manager || connection.address || "",
+      };
     } catch {
       return emptyDraft;
     }
@@ -43,7 +49,6 @@ function Wizard() {
   const [step, setStep] = useState(0),
     [error, setError] = useState<unknown>();
   const { t } = useLanguage(),
-    connection = useConnection(),
     navigate = useNavigate();
   const tx = useTransaction(d);
   useEffect(() => {
@@ -64,6 +69,13 @@ function Wizard() {
       onChange={change(key)}
       help={help}
       multiline={multiline}
+      inputMode={
+        ["goal", "days", "threshold", "minimum"].includes(key)
+          ? key === "goal"
+            ? "decimal"
+            : "numeric"
+          : undefined
+      }
     />
   );
   let review;
@@ -117,34 +129,26 @@ function Wizard() {
     }
   }
   return (
-    <div className="form-container stack">
-      <div>
-        <div className="eyebrow"> ສ້າງກອງທຶນໃຫ້ອົງກອນ ແລະມູນນິທິ </div>
-        <h1>{t("create")}</h1>
-        <p>
-          {" "}
-          ບອກພາລະກິດຂອງອົງກອນ ກຳນົດເປົ້າໝາຍ ແລະເລືອກຜູ້ຮ່ວມອະນຸມັດ.
-          ຂໍ້ມູນຮ່າງຈະຖືກບັນທຶກໄວ້ໃນອຸປະກອນນີ້.{" "}
-        </p>
-      </div>
-      <SelectField
-        label="ເຄືອຂ່າຍທີ່ໃຊ້ສ້າງກອງທຶນ"
-        value={version}
-        onChange={setVersion}
-        options={deployments.map((d) => [
-          d.version,
-          `${d.chainId === 31337 ? "ເຄືອຂ່າຍທົດລອງ" : d.chainId} · ${d.version}`,
-        ])}
+    <div className="mx-auto w-full max-w-3xl flex min-w-0 flex-col gap-6">
+      <PageHeader
+        title={t("create")}
+        description="ຮ່າງຖືກບັນທຶກໃນອຸປະກອນນີ້ອັດຕະໂນມັດ."
       />
-      <div className="stepper">
-        {["ຂໍ້ມູນ", "ລະດົມທຶນ", "ການອະນຸມັດ", "ຜູ້ຮັບ", "ກວດສອບ"].map(
-          (s, i) => (
-            <div className={i === step ? "step active" : "step"} key={s}>
-              {i + 1}. {s}
-            </div>
-          ),
-        )}
-      </div>
+      {deployments.length > 1 ? (
+        <SelectField
+          label="ເຄືອຂ່າຍທີ່ໃຊ້ສ້າງກອງທຶນ"
+          value={version}
+          onChange={setVersion}
+          options={deployments.map((d) => [
+            d.version,
+            `${d.chainId === 31337 ? "ເຄືອຂ່າຍທົດລອງ" : d.chainId} · ${d.version}`,
+          ])}
+        />
+      ) : null}
+      <ProgressSteps
+        step={step}
+        labels={["ຂໍ້ມູນ", "ລະດົມທຶນ", "ການອະນຸມັດ", "ຜູ້ຮັບ", "ກວດສອບ"]}
+      />
       <Panel
         title={
           [
@@ -159,19 +163,14 @@ function Wizard() {
         <FieldGroup>
           {step === 0 ? (
             <>
-              {input(
-                "title",
-                t("title"),
-                "ຕັ້ງຊື່ໃຫ້ສັ້ນ ແລະຈື່ງ່າຍ. ພາສາລາວປະມານ 40 ຕົວອັກສອນ (ບໍ່ເກີນ 120 ໄບຕ໌).",
-              )}
+              {input("title", t("title"), "ພາສາລາວປະມານ 40 ຕົວອັກສອນ.")}
               {input(
                 "summary",
                 t("summary"),
-                "ອະທິບາຍວ່າເຈົ້າຢາກຊ່ວຍໃຜ ແລະຈະນຳໃຊ້ເງິນແນວໃດ (ບໍ່ເກີນ 600 ໄບຕ໌).",
+                "ຊ່ວຍໃຜ ແລະຈະນຳໃຊ້ເງິນແນວໃດ?",
                 true,
               )}
               {input("category", "ໝວດໝູ່")}
-              {input("location", "ສະຖານທີ່ (ຖ້າມີ)")}
               {input("manager", t("manager"))}
               <Button
                 variant="outline"
@@ -189,8 +188,11 @@ function Wizard() {
                 "ເງື່ອນໄຂນີ້ຈະປ່ຽນບໍ່ໄດ້ຫຼັງສ້າງກອງທຶນ. ກະລຸນາເກັບສຳເນົາໄວ້ນຳ.",
                 true,
               )}
-              {input("termsURI", "ລິ້ງເອກະສານເງື່ອນໄຂ (ຖ້າມີ)")}
-              {input("metadataURI", "ລິ້ງຂໍ້ມູນເພີ່ມເຕີມ (ຖ້າມີ)")}
+              <Disclosure title="ຂໍ້ມູນເພີ່ມເຕີມ (ຖ້າມີ)">
+                {input("location", "ສະຖານທີ່ (ຖ້າມີ)")}
+                {input("termsURI", "ລິ້ງເອກະສານເງື່ອນໄຂ (ຖ້າມີ)")}
+                {input("metadataURI", "ລິ້ງຂໍ້ມູນເພີ່ມເຕີມ (ຖ້າມີ)")}
+              </Disclosure>
               <Notice title="ຂໍ້ມູນສາທາລະນະຖາວອນ">{t("privacy")}</Notice>
             </>
           ) : null}
@@ -336,16 +338,8 @@ function Wizard() {
                       ? "ເລືອກຜູ້ຮັບໄດ້ຕາມການອະນຸມັດ"
                       : review[2].join("\n") || "ຍັງບໍ່ມີລາຍຊື່ຜູ້ຮັບ"}
                   </dd>
-                  <dt> ລະຫັດຢືນຢັນເງື່ອນໄຂ </dt>
-                  <dd>
-                    <code>{review[0].termsHash}</code>
-                    <p>{draft.terms}</p>
-                  </dd>
-                  <dt> ຂໍ້ມູນອ້າງອີງກອງທຶນ </dt>
-                  <dd>
-                    {d.chainId} / {d.version}
-                    <code className="hash">{d.openFundAddress}</code>
-                  </dd>
+                  <dt>ຈຸດປະສົງ ແລະເງື່ອນໄຂ</dt>
+                  <dd className="whitespace-pre-wrap">{draft.terms}</dd>
                 </dl>
               ) : (
                 <Notice title="ກະລຸນາກວດສອບຂໍ້ມູນ">
@@ -359,11 +353,23 @@ function Wizard() {
                   })()}
                 </Notice>
               )}
-              <Connect chainId={d.chainId} />
+              <Disclosure title="ຂໍ້ມູນອ້າງອີງ">
+                <code>{review?.[0].termsHash}</code>
+                <p>
+                  {d.chainId} · {d.version}
+                </p>
+                <code>{d.openFundAddress}</code>
+              </Disclosure>
+              {!connection.address || connection.chainId !== d.chainId ? (
+                <Connect chainId={d.chainId} />
+              ) : null}
             </>
           ) : null}
         </FieldGroup>
-        <div className="form-actions">
+        <div className="pt-5">
+          <ErrorNotice error={error} />
+        </div>
+        <div className="flex items-center justify-between gap-3 pt-6">
           <Button
             variant="outline"
             disabled={step === 0 || tx.busy}
@@ -388,7 +394,6 @@ function Wizard() {
           )}
         </div>
       </Panel>
-      <ErrorNotice error={error} />
       <TxFeedback state={tx.state} d={d} />
     </div>
   );
