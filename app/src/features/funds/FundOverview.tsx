@@ -22,7 +22,7 @@ export function FundOverview() {
   const f = row.fund;
   return (
     <div className="stack">
-      <Notice title="ສະຖານະກອງທຶນ / Effective status">
+      <Notice title="ສະຖານະກອງທຶນ">
         {t(
           (
             [
@@ -39,8 +39,8 @@ export function FundOverview() {
         {[
           [t("raised"), f.totalRaised],
           [t("balance"), f.balance],
-          ["Paid out", f.totalWithdrawn],
-          ["Refunded", f.totalRefunded],
+          ["ຈ່າຍແລ້ວ", f.totalWithdrawn],
+          ["ຄືນເງິນແລ້ວ", f.totalRefunded],
         ].map(([label, value]) => (
           <div className="metric" key={String(label)}>
             <span>{String(label)}</span>
@@ -53,71 +53,76 @@ export function FundOverview() {
       <div className="detail-grid">
         <div className="stack">
           <Panel
-            title="Immutable fund rules"
-            description="Presentation metadata cannot change these promises."
+            title="ເງື່ອນໄຂກອງທຶນ"
+            description="ເງື່ອນໄຂນີ້ຈະບໍ່ປ່ຽນ ເຖິງຈະມີການອັບເດດຂໍ້ມູນອື່ນ."
           >
             <dl className="data-list">
-              <dt>Mode</dt>
-              <dd>{f.config.fundingMode === 0 ? "TARGETED" : "CONTINUOUS"}</dd>
-              <dt>Goal</dt>
+              <dt> ຮູບແບບ </dt>
+              <dd>{f.config.fundingMode === 0 ? "ມີເປົ້າໝາຍ" : "ຕໍ່ເນື່ອງ"}</dd>
+              <dt> ເປົ້າໝາຍ </dt>
               <dd>
                 {f.config.fundingGoal
                   ? `${ofl(f.config.fundingGoal)} OFL`
-                  : "No goal"}
+                  : "ບໍ່ກຳນົດເປົ້າໝາຍ"}
               </dd>
-              <dt>Deadline</dt>
-              <dd>{date(f.config.deadline)} (block time decides)</dd>
-              <dt>Donation policy</dt>
+              <dt> ວັນສິ້ນສຸດ </dt>
+              <dd>{date(f.config.deadline)} (ຕາມເວລາເຄືອຂ່າຍ) </dd>
+              <dt> ເງື່ອນໄຂການສະໜັບສະໜູນ </dt>
               <dd>
                 <Policy row={row} />
               </dd>
-              <dt>Recipient mode</dt>
-              <dd>{f.config.recipientPolicy === 0 ? "OPEN" : "ALLOWLIST"}</dd>
-              <dt>Minimum quorum</dt>
+              <dt> ເງື່ອນໄຂຜູ້ຮັບ </dt>
+              <dd>
+                {f.config.recipientPolicy === 0
+                  ? "ເລືອກຜູ້ຮັບໄດ້ຕາມການອະນຸມັດ"
+                  : "ສະເພາະຜູ້ຮັບໃນລາຍຊື່"}
+              </dd>
+              <dt> ຈຳນວນອະນຸມັດຂັ້ນຕ່ຳ </dt>
               <dd>{f.config.minimumApprovalThreshold}</dd>
-              <dt>Terms hash</dt>
+              <dt> ລະຫັດຢືນຢັນເງື່ອນໄຂ </dt>
               <dd>
                 <code>{f.config.termsHash}</code>
               </dd>
-              <dt>Terms URI</dt>
+              <dt> ເອກະສານເງື່ອນໄຂ </dt>
               <dd>
-                <code>{f.termsURI || "No external document"}</code>
+                <code>{f.termsURI || "ບໍ່ມີເອກະສານເພີ່ມ"}</code>
               </dd>
             </dl>
           </Panel>
-          <Panel title="People & protocol">
+          <Panel title="ຜູ້ຮັບຜິດຊອບ ແລະຂໍ້ມູນກອງທຶນ">
             <dl className="data-list">
-              <dt>Creator (historical)</dt>
+              <dt> ຜູ້ສ້າງກອງທຶນ </dt>
               <dd>
                 <code>{f.creator}</code>
               </dd>
-              <dt>Current manager</dt>
+              <dt> ຜູ້ຈັດການປັດຈຸບັນ </dt>
               <dd>
                 <code>{f.manager}</code>
               </dd>
-              <dt>Current approvals</dt>
+              <dt> ຈຳນວນການອະນຸມັດ </dt>
               <dd>
-                {f.threshold} / {row.approvers.length} · Governance v
+                {f.threshold} / {row.approvers.length} · ການອະນຸມັດຮຸ່ນ{" "}
                 {f.governanceVersion.toString()}
               </dd>
-              <dt>Official identity</dt>
+              <dt> ຂໍ້ມູນອ້າງອີງກອງທຶນ </dt>
               <dd>
                 {d.chainId} · {d.version}
                 <code className="hash">{d.openFundAddress}</code>
               </dd>
-              <dt>Presentation metadata</dt>
+              <dt> ຂໍ້ມູນເພີ່ມເຕີມ </dt>
               <dd>
-                <code>{f.metadataURI || "On-chain description only"}</code>
+                <code>{f.metadataURI || "ມີພຽງລາຍລະອຽດທີ່ບັນທຶກໃນລະບົບ"}</code>
                 <p>
-                  This URI may be changed by the manager. Terms remain anchored
-                  above.
+                  {" "}
+                  ຜູ້ຈັດການສາມາດອັບເດດລິ້ງນີ້ໄດ້
+                  ແຕ່ເງື່ອນໄຂກອງທຶນຍັງຄົງເດີມ.{" "}
                 </p>
               </dd>
             </dl>
           </Panel>
         </div>
         <div className="stack">
-          <Panel title="ຮ່ວມສ້າງສິ່ງດີໆ / Contribute">
+          <Panel title="ຮ່ວມສ້າງສິ່ງດີໆ">
             <div className="stack">
               <p>
                 <Policy row={row} />
@@ -128,20 +133,23 @@ export function FundOverview() {
                   {t("donate")}
                 </ActionLink>
               ) : (
-                <Notice title="Deposits stopped">
-                  This fund’s effective status does not accept new donations.
+                <Notice title="ຢຸດຮັບສະໜັບສະໜູນແລ້ວ">
+                  {" "}
+                  ກອງທຶນນີ້ບໍ່ຮັບສະໜັບສະໜູນເພີ່ມໃນຂະນະນີ້.{" "}
                 </Notice>
               )}
               <small>
-                One donation transaction. No token approval. Native gas is
-                required.
+                {" "}
+                ຢືນຢັນການສະໜັບສະໜູນຄັ້ງດຽວ.
+                ກະລຸນາກຽມຄ່າທຳນຽມເຄືອຂ່າຍໃນກະເປົາ.{" "}
               </small>
             </div>
           </Panel>
           {f.threshold === 1 ? (
-            <Notice title="Single-signature risk">
-              One approver can authorize spending. Multiple approvals do not
-              guarantee real-world use either.
+            <Notice title="ການອະນຸມັດໂດຍຄົນດຽວ">
+              {" "}
+              ຜູ້ອະນຸມັດຄົນດຽວສາມາດຕັດສິນໃຈຈ່າຍເງິນໄດ້.
+              ການມີຫຼາຍຄົນກໍບໍ່ໄດ້ຮັບຮອງການນຳໃຊ້ເງິນໃນຊີວິດຈິງ.{" "}
             </Notice>
           ) : null}
           <RefundClaim />
@@ -169,12 +177,10 @@ export function RefundClaim() {
   });
   if (row.status !== 2) return null;
   return (
-    <Panel title="Self-service donor refunds">
+    <Panel title="ຮັບເງິນສະໜັບສະໜູນຄືນ">
       <div className="stack">
-        <p>
-          {t("refundPolicy")} Claims have no expiration and no protocol fee.
-        </p>
-        <p>Eligible for this wallet: {ofl(q.data)} OFL</p>
+        <p>{t("refundPolicy")} ບໍ່ມີວັນໝົດອາຍຸ ຫຼືຄ່າບໍລິການຈາກລະບົບ. </p>
+        <p> ຍອດທີ່ກະເປົານີ້ຮັບຄືນໄດ້: {ofl(q.data)} OFL</p>
         <ErrorNotice error={q.error} />
         <Button
           disabled={!q.data || tx.busy || c.chainId !== d.chainId}
@@ -191,9 +197,7 @@ export function RefundClaim() {
         >
           {t("refund")}
         </Button>
-        <small>
-          Refund goes to the same donating wallet. Native gas is required.
-        </small>
+        <small> ເງິນຈະກັບໄປກະເປົາທີ່ສະໜັບສະໜູນ. ຕ້ອງມີຄ່າທຳນຽມເຄືອຂ່າຍ. </small>
         <TxFeedback state={tx.state} d={d} />
       </div>
     </Panel>
@@ -205,11 +209,12 @@ export function ClosureFinalize() {
     tx = useTransaction(d);
   if (row.status !== 2 && row.status !== 3) return null;
   return (
-    <Panel title="Finalize closure">
+    <Panel title="ຢືນຢັນປິດກອງທຶນ">
       <div className="stack">
         <p>
-          Remaining fund balance: {ofl(row.fund.balance)} OFL. A fund can only
-          close at zero balance; no sweep is available.
+          {" "}
+          ຍອດຄົງເຫຼືອກອງທຶນ: {ofl(row.fund.balance)} OFL.
+          ປິດກອງທຶນໄດ້ເມື່ອຍອດຄົງເຫຼືອເປັນສູນເທົ່ານັ້ນ.{" "}
         </p>
         {row.fund.balance === 0n ? (
           <Button
@@ -225,13 +230,14 @@ export function ClosureFinalize() {
               )
             }
           >
-            Finalize immutable closed archive
+            {" "}
+            ປິດກອງທຶນຖາວອນ{" "}
           </Button>
         ) : (
           <small>
             {row.status === 2
-              ? "All donors retain their refund entitlements indefinitely."
-              : "Propose any settlement payout through the normal governance flow."}
+              ? "ຜູ້ສະໜັບສະໜູນຍັງມີສິດຮັບເງິນຄືນໂດຍບໍ່ມີວັນໝົດອາຍຸ."
+              : "ການຈ່າຍເງິນທີ່ເຫຼືອຕ້ອງຜ່ານການສະເໜີ ແລະອະນຸມັດຕາມປົກກະຕິ."}
           </small>
         )}
         <TxFeedback state={tx.state} d={d} />

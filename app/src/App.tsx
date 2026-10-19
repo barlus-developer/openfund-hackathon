@@ -86,7 +86,7 @@ export function App({ walletConfig = config }: { walletConfig?: Config }) {
                     <Route
                       path="*"
                       element={
-                        <EmptyState description="Page not found. Use the navigation to explore official funds." />
+                        <EmptyState description="ບໍ່ພົບໜ້ານີ້. ກະລຸນາໃຊ້ເມນູເພື່ອຄົ້ນຫາກອງທຶນ." />
                       }
                     />
                   </Route>

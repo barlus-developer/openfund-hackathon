@@ -92,18 +92,19 @@ export function useTransaction(d: Deployment) {
         (stage) => update({ stage }),
       );
       update({ receipt, hash: receipt.transactionHash });
-      toast.success("Transaction confirmed", {
+      toast.success("ຢືນຢັນລາຍການສຳເລັດ", {
         description: receipt.transactionHash,
       });
       await queryClient.invalidateQueries();
       return receipt;
     } catch (error) {
       const message = friendlyError(error);
+      const rawMessage = error instanceof Error ? error.message : String(error);
       toast.error(message);
       update({
-        stage: /rejected/i.test(message)
+        stage: /rejected|denied|4001/i.test(rawMessage)
           ? "Rejected"
-          : /revert/i.test(message)
+          : /revert/i.test(rawMessage)
             ? "Reverted"
             : "Failed",
         error: message,

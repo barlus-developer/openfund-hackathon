@@ -1,74 +1,122 @@
-import { Panel } from "@/components/common";
+import {
+  ArrowRight,
+  BookOpen,
+  HeartHandshake,
+  ShieldCheck,
+} from "lucide-react";
+import { ActionLink, Panel } from "@/components/common";
 export function About() {
   return (
     <div className="stack prose">
-      <div className="eyebrow">TRANSPARENCY WITH CLEAR LIMITS</div>
-      <h1>ຮ່ວມສ້າງອະນາຄົດ / How OpenFund works</h1>
-      <Panel title="Choose the rules before giving">
+      <div className="page-title">
+        <div>
+          <div className="eyebrow">ຮູ້ຈັກ OpenFund</div>
+          <h1>ລະດົມທຶນໄດ້ ຮ່ວມສ້າງໄດ້</h1>
+          <p>
+            OpenFund ເປັນພື້ນທີ່ລະດົມທຶນສຳລັບອົງກອນ ແລະມູນນິທິ.
+            ສ້າງກອງທຶນເພື່ອພາລະກິດ ຮ່ວມກັນອະນຸມັດການໃຊ້ເງິນ
+            ແລະໃຫ້ຜູ້ສະໜັບສະໜູນຕິດຕາມໄດ້.
+          </p>
+        </div>
+      </div>
+      <Panel
+        title={
+          <>
+            <BookOpen className="inline-icon" /> ເລືອກກອງທຶນ ແລະອ່ານເງື່ອນໄຂ
+          </>
+        }
+      >
         <p>
-          Targeted funds have an exact goal and a 1–365 day duration. Donations
-          stop at the goal or exact deadline. A failed REFUND fund lets each
-          donor reclaim 100% from the original wallet indefinitely. KEEP_FUNDS
-          becomes spendable under governance after its deadline. Continuous
-          donations have no automatic failure-refund right.
+          ກອງທຶນແບບມີເປົ້າໝາຍຈະກຳນົດຍອດເງິນ ແລະໄລຍະເວລາ 1–365 ວັນ.
+          ການຮັບສະໜັບສະໜູນຈະຢຸດເມື່ອຄົບເປົ້າໝາຍ ຫຼືຮອດກຳນົດ.
+        </p>
+        <p>
+          ກະລຸນາເບິ່ງວ່າ ຖ້າບໍ່ເຖິງເປົ້າໝາຍ ກອງທຶນຈະໃຫ້ຮັບເງິນຄືນ
+          ຫຼືເກັບເງິນໄວ້ດຳເນີນງານ. ກອງທຶນແບບຕໍ່ເນື່ອງບໍ່ມີການຄືນເງິນອັດຕະໂນມັດ.
         </p>
       </Panel>
-      <Panel title="One donation, public governance">
+      <Panel
+        title={
+          <>
+            <HeartHandshake className="inline-icon" />{" "}
+            ສະໜັບສະໜູນຜ່ານກະເປົາຂອງເຈົ້າ
+          </>
+        }
+      >
         <p>
-          Your wallet calls OFL transferAndCall with the official protocol
-          address and encoded fund ID. The token transfer and isolated fund
-          credit either both succeed or both revert. There is no prior allowance
-          transaction.
+          ເຈົ້າສາມາດເບິ່ງກອງທຶນໄດ້ໂດຍບໍ່ຕ້ອງເຊື່ອມກະເປົາ. ເມື່ອພ້ອມສະໜັບສະໜູນ
+          ໃຫ້ເຊື່ອມ MetaMask ເລືອກຈຳນວນ OFL ແລະຢືນຢັນໃນກະເປົາ.
         </p>
         <p>
-          Managers propose exact actions. The fund’s named approvers vote on
-          chain. Payouts execute after quorum; manager, approver, threshold,
-          recipient and closure changes wait 24 hours. Approvals expire after 7
-          days; approved actions have a separate 7-day execution window. Other
-          proposals can spend the available balance first.
-        </p>
-      </Panel>
-      <Panel title="Closing and key-loss risks">
-        <p>
-          Only governance can start closure. Deposits then stop permanently.
-          Settlement payouts still need normal approvals. Anyone may finalize
-          once balance and liabilities are zero. Refund entitlements cannot be
-          swept or expired.
-        </p>
-        <p>
-          1/1 funds allow one wallet to authorize spending. Multi-approval
-          cannot prevent collusion or establish real-world charitable use. Lost
-          approver keys may permanently lock funds. There is no admin override.
+          ຕ້ອງມີເງິນສຳລັບຄ່າທຳນຽມເຄືອຂ່າຍ.
+          ລໍຖ້າຂໍ້ຄວາມຢືນຢັນສຳເລັດກ່ອນຖືວ່າສະໜັບສະໜູນແລ້ວ.
         </p>
       </Panel>
-      <Panel title="Privacy, evidence and disputes">
+      <Panel
+        title={
+          <>
+            <ShieldCheck className="inline-icon" /> ຮ່ວມກັນອະນຸມັດ ແລະຕິດຕາມ
+          </>
+        }
+      >
         <p>
-          All on-chain descriptions, addresses and document references are
-          public and permanent. Never publish victims’, patients’ or
-          beneficiaries’ private information. A document hash proves byte
-          integrity, not truth. A CID does not guarantee storage availability.
+          ຜູ້ຈັດການສະເໜີການນຳໃຊ້ເງິນ ແລະຜູ້ອະນຸມັດຂອງກອງທຶນຮ່ວມຕັດສິນໃຈ.
+          ການຈ່າຍເງິນຕ້ອງມີຈຳນວນການອະນຸມັດຄົບຕາມເງື່ອນໄຂ.
         </p>
         <p>
-          Official protocol membership is not charity identity verification.
-          OpenFund does not arbitrate real-world disputes. Community due
-          diligence and independent evidence remain necessary.
-        </p>
-      </Panel>
-      <Panel title="Development system">
-        <p>
-          This is an unaudited local testnet demo. DEMO OFL is not backed by LAK
-          or redeemable for fiat. Real issuance, reserve custody, compliance,
-          redemption operations, public network deployment, persistent IPFS
-          pinning and independent security audits remain external.
-        </p>
-        <p>
-          The React app is static and client-only. RPC history scans can be
-          incomplete, slow or limited by providers; filters apply to loaded
-          records. A reachable RPC is required for public reads. Mobile wallets
-          need an RPC reachable from the mobile device; phone localhost is not
-          your development computer.
+          ການປ່ຽນຜູ້ຈັດການ ຜູ້ອະນຸມັດ ຈຳນວນການອະນຸມັດ ຜູ້ຮັບ
+          ແລະການເລີ່ມປິດກອງທຶນ ຕ້ອງລໍຖ້າ 24 ຊົ່ວໂມງຫຼັງອະນຸມັດຄົບ.
+          ຂໍ້ສະເໜີທີ່ຍັງບໍ່ອະນຸມັດຈະໝົດອາຍຸໃນ 7 ວັນ; ເມື່ອອະນຸມັດຄົບ ມີເວລາອີກ 7
+          ວັນເພື່ອດຳເນີນການ.
         </p>
       </Panel>
+      <Panel title="ການຮັບເງິນຄືນ ແລະປິດກອງທຶນ">
+        <p>
+          ຖ້າກອງທຶນມີນະໂຍບາຍຄືນເງິນ ແລະບໍ່ເຖິງເປົ້າໝາຍພາຍໃນກຳນົດ
+          ຜູ້ສະໜັບສະໜູນສາມາດຮັບເງິນຄືນ 100% ຜ່ານກະເປົາເດີມ ໂດຍບໍ່ມີວັນໝົດອາຍຸ.
+          ຍັງຕ້ອງຈ່າຍຄ່າທຳນຽມເຄືອຂ່າຍ.
+        </p>
+        <p>
+          ການເລີ່ມປິດກອງທຶນຈະຢຸດຮັບສະໜັບສະໜູນຖາວອນ.
+          ການຈ່າຍເງິນທີ່ເຫຼືອຍັງຕ້ອງຜ່ານການອະນຸມັດ
+          ແລະປິດສຳເລັດໄດ້ເມື່ອຍອດເງິນເປັນສູນ.
+        </p>
+      </Panel>
+      <Panel title="ເບິ່ງຂໍ້ມູນໃຫ້ຄົບ ກ່ອນຕັດສິນໃຈ">
+        <p>
+          ຂໍ້ມູນສາທາລະນະບໍ່ໄດ້ຮັບຮອງຕົວຕົນ ຫຼືການນຳໃຊ້ເງິນໃນຊີວິດຈິງ.
+          ກະລຸນາກວດສອບຜູ້ຈັດການ ແລະຫຼັກຖານປະກອບ. ລະບົບບໍ່ໄດ້ຕັດສິນຂໍ້ຂັດແຍ່ງ.
+        </p>
+        <p>
+          ຜູ້ອະນຸມັດພຽງຄົນດຽວສາມາດຕັດສິນໃຈຈ່າຍເງິນໄດ້.
+          ການມີຫຼາຍຄົນກໍບໍ່ສາມາດປ້ອງກັນການຮ່ວມກັນທຸຈະລິດໄດ້ທັງໝົດ.
+          ຖ້າເສຍສິດເຂົ້າກະເປົາຈົນອະນຸມັດບໍ່ຄົບ ເງິນອາດຖືກລັອກຖາວອນ
+          ແລະບໍ່ມີຜູ້ດູແລທີ່ຂ້າມເງື່ອນໄຂໄດ້.
+        </p>
+      </Panel>
+      <Panel title="ປົກປ້ອງຂໍ້ມູນສ່ວນຕົວ">
+        <p>
+          ຊື່ກອງທຶນ ລາຍລະອຽດ ທີ່ຢູ່ກະເປົາ ແລະເອກະສານທີ່ເຜີຍແຜ່
+          ເປັນຂໍ້ມູນສາທາລະນະຖາວອນ.
+          ຫ້າມເຜີຍແຜ່ຂໍ້ມູນສ່ວນຕົວຂອງຜູ້ອື່ນໂດຍບໍ່ໄດ້ຮັບອະນຸຍາດ.
+          ການກວດໄຟລ໌ຢືນຢັນໄດ້ພຽງວ່າໄຟລ໌ບໍ່ຖືກປ່ຽນ ແຕ່ບໍ່ຮັບຮອງເນື້ອຫາ
+          ຫຼືການເກັບໄຟລ໌ຖາວອນ.
+        </p>
+      </Panel>
+      <Panel title="ກ່ຽວກັບລະບົບທົດລອງ">
+        <p>
+          ລະບົບນີ້ຍັງຢູ່ໃນຂັ້ນທົດລອງ ແລະຍັງບໍ່ຜ່ານການກວດຄວາມປອດໄພອິດສະຫຼະ. OFL
+          ທົດລອງບໍ່ມີເງິນກີບຄ້ຳປະກັນ ແລະບໍ່ສາມາດແລກເປັນເງິນກີບໄດ້. ການສະແດງ 1
+          OFL ≈ 1 ກີບ ເປັນພຽງຄ່າອ້າງອີງ.
+        </p>
+        <p>
+          ປະຫວັດອາດໂຫຼດບໍ່ຄົບໃນຄັ້ງດຽວ. ກົດໂຫຼດເພີ່ມເພື່ອເບິ່ງລາຍການອື່ນ
+          ແລະກວດວ່າເຄືອຂ່າຍເຊື່ອມຕໍ່ຢູ່.
+        </p>
+      </Panel>
+      <ActionLink to="/funds">
+        ເລືອກກອງທຶນທີ່ໃສ່ໃຈ <ArrowRight data-icon="inline-end" />
+      </ActionLink>
     </div>
   );
 }

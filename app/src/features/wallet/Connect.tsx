@@ -42,7 +42,8 @@ export function Connect({
             size="sm"
             onClick={() => disconnect.mutate({})}
           >
-            Disconnect
+            {" "}
+            ຕັດການເຊື່ອມຕໍ່{" "}
           </Button>
         </>
       ) : (
@@ -50,7 +51,7 @@ export function Connect({
           onClick={() => connect.mutate({ connector: connectors[0], chainId })}
           disabled={connect.isPending}
         >
-          {connect.isPending ? "Connecting…" : t("connect")}
+          {connect.isPending ? "ກຳລັງເຊື່ອມຕໍ່…" : t("connect")}
         </Button>
       )}
       <ErrorNotice error={connect.error || sw.error} />

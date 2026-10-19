@@ -131,7 +131,7 @@ export function validateStep(d: Draft, step: number) {
 export const emptyDraft: Draft = {
   title: "",
   summary: "",
-  category: "Education",
+  category: "ໂຄງການ",
   manager: "",
   metadataURI: "",
   termsURI: "",

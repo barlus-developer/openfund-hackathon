@@ -1,3 +1,4 @@
+import { actionLabels, proposalStatusLabels } from "@/app/labels";
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useConnection } from "wagmi";
@@ -10,12 +11,7 @@ import {
   type Deployment,
 } from "@/web3/deployments";
 import { useActivity } from "@/hooks/useActivity";
-import {
-  readFund,
-  useProposal,
-  actionNames,
-  proposalStatuses,
-} from "@/web3/reads";
+import { readFund, useProposal } from "@/web3/reads";
 import { openFundAbi } from "@/web3/generated/OpenFund";
 import { useTransaction } from "@/hooks/useTransaction";
 import { Connect } from "@/features/wallet/Connect";
@@ -36,13 +32,15 @@ import type { Address } from "viem";
 export function Dashboard() {
   const c = useConnection();
   if (!defaultDeployment)
-    return <EmptyState description="Deploy the official contracts first." />;
+    return (
+      <EmptyState description="ລະບົບຍັງບໍ່ພ້ອມໃຊ້ງານ. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ." />
+    );
   return (
     <div className="stack">
       <div className="page-title">
         <div>
-          <div className="eyebrow">YOUR OPENFUND</div>
-          <h1>ກອງທຶນຂອງຂ້ອຍ / Dashboard</h1>
+          <div className="eyebrow"> ພື້ນທີ່ຂອງເຈົ້າ </div>
+          <h1> ກອງທຶນຂອງຂ້ອຍ </h1>
         </div>
         <Connect />
       </div>
@@ -50,9 +48,13 @@ export function Dashboard() {
         {["", "funds", "donations", "approvals", "refunds"].map((s, i) => (
           <Link to={"/dashboard" + (s ? "/" + s : "")} key={s}>
             {
-              ["Overview", "My funds", "My donations", "Approvals", "Refunds"][
-                i
-              ]
+              [
+                "ພາບລວມ",
+                "ກອງທຶນຂອງຂ້ອຍ",
+                "ການສະໜັບສະໜູນຂອງຂ້ອຍ",
+                "ການອະນຸມັດ",
+                "ຮັບເງິນຄືນ",
+              ][i]
             }
           </Link>
         ))}
@@ -64,7 +66,7 @@ export function Dashboard() {
           address={c.address}
         />
       ) : (
-        <EmptyState description="Connect MetaMask to discover this wallet’s on-chain funds, donations, approvals and refund claims." />
+        <EmptyState description="ເຊື່ອມ MetaMask ເພື່ອເບິ່ງກອງທຶນ ການສະໜັບສະໜູນ ລາຍການອະນຸມັດ ແລະເງິນທີ່ຮັບຄືນໄດ້ຂອງເຈົ້າ." />
       )}
     </div>
   );
@@ -123,15 +125,14 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
     <div className="stack">
       <ScanControls q={q} />
       <small>
-        Wallet membership and donation candidates come from the scanned events,
-        then current roles and entitlements are verified by contract reads. More
-        block windows may reveal additional records.
+        {" "}
+        ລາຍການນີ້ອີງຕາມຂໍ້ມູນທີ່ໂຫຼດແລ້ວ.
+        ສາມາດໂຫຼດປະຫວັດເພີ່ມເພື່ອຄົ້ນຫາລາຍການອື່ນຂອງເຈົ້າ.{" "}
       </small>
       {q.isLoading ? <Loading /> : null}
       <ErrorNotice error={funds.error} />
       <small>
-        {discovered.length} / {ids.length} discovered fund memberships loaded,
-        four funds per RPC batch.
+        {discovered.length} / {ids.length} ກອງທຶນທີ່ກ່ຽວຂ້ອງຖືກໂຫຼດແລ້ວ.{" "}
       </small>
       {Math.max(
         ids.length,
@@ -140,16 +141,17 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
         donations.length,
       ) > limit ? (
         <Button variant="outline" onClick={() => setLimit((n) => n + 12)}>
-          Load 12 more discovered records
+          {" "}
+          ໂຫຼດເພີ່ມ 12 ລາຍການ{" "}
         </Button>
       ) : null}
       {section === "" ? (
         <div className="metrics">
           {[
-            ["Managed / created (loaded)", myFunds.length],
-            ["Donation transactions (loaded)", donations.length],
-            ["Current approver memberships", approverFunds.length],
-            ["Refund candidates", refundIds.length],
+            ["ກອງທຶນທີ່ສ້າງ ຫຼືດູແລ", myFunds.length],
+            ["ຈຳນວນການສະໜັບສະໜູນ", donations.length],
+            ["ກອງທຶນທີ່ຮ່ວມອະນຸມັດ", approverFunds.length],
+            ["ກອງທຶນທີ່ອາດຮັບເງິນຄືນໄດ້", refundIds.length],
           ].map(([key, v]) => (
             <div className="metric" key={key}>
               <span>{key}</span>
@@ -159,7 +161,7 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
         </div>
       ) : null}
       {section === "" || section === "funds" ? (
-        <Panel title="Created / currently managed funds">
+        <Panel title="ກອງທຶນທີ່ສ້າງ ຫຼືກຳລັງດູແລ">
           {myFunds.length ? (
             <div className="fund-grid">
               {myFunds.map((r) => (
@@ -172,7 +174,7 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
         </Panel>
       ) : null}
       {section === "" || section === "donations" ? (
-        <Panel title="My donation transactions">
+        <Panel title="ປະຫວັດການສະໜັບສະໜູນຂອງຂ້ອຍ">
           {donations.length ? (
             donations
               .slice()
@@ -191,18 +193,18 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
         </Panel>
       ) : null}
       {section === "" || section === "approvals" ? (
-        <Panel title="Current approver tasks (loaded)">
+        <Panel title="ລາຍການທີ່ລໍຖ້າຂ້ອຍອະນຸມັດ">
           {proposalIds.length ? (
             proposalIds
               .slice(0, limit)
               .map((id) => <ApprovalTask key={id.toString()} id={id} d={d} />)
           ) : (
-            <EmptyState description="No proposals discovered for current approver memberships in the scanned range." />
+            <EmptyState description="ຍັງບໍ່ພົບລາຍການທີ່ຕ້ອງອະນຸມັດໃນຂໍ້ມູນທີ່ໂຫຼດ." />
           )}
         </Panel>
       ) : null}
       {section === "" || section === "refunds" ? (
-        <Panel title="Self-claim refunds">
+        <Panel title="ຮັບເງິນສະໜັບສະໜູນຄືນ">
           {refundIds.length ? (
             refundIds
               .slice(0, limit)
@@ -215,7 +217,7 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
                 />
               ))
           ) : (
-            <EmptyState description="No donor refund candidates discovered. KEEP_FUNDS and CONTINUOUS donations have no automatic failure refund." />
+            <EmptyState description="ຍັງບໍ່ພົບລາຍການຮັບເງິນຄືນ. ກອງທຶນທີ່ເກັບເງິນໄວ້ ຫຼືຮັບສະໜັບສະໜູນຕໍ່ເນື່ອງ ບໍ່ມີການຄືນເງິນອັດຕະໂນມັດ." />
           )}
         </Panel>
       ) : null}
@@ -234,10 +236,10 @@ function ApprovalTask({ d, id }: { d: Deployment; id: bigint }) {
       to={fundPath(d, p.fundId) + `/proposals/${id}`}
     >
       <strong>
-        #{id.toString()} · {actionNames[p.action.kind]}
+        #{id.toString()} · {actionLabels[p.action.kind]}
       </strong>
       <Badge variant="outline">
-        {proposalStatuses[s]} · {p.approvals} approvals
+        {proposalStatusLabels[s]} · {p.approvals} ການອະນຸມັດ{" "}
       </Badge>
     </Link>
   );
@@ -274,19 +276,19 @@ function RefundTask({
   if (!q.data)
     return (
       <p className="tagline">
-        Fund #{id.toString()}: no current refundable entitlement.{" "}
-        <Link to={fundPath(d, id)}>View immutable rules ↗</Link>
+        {" "}
+        ກອງທຶນ # {id.toString()} : ບໍ່ມີຍອດທີ່ຮັບຄືນໄດ້ໃນຂະນະນີ້.{" "}
+        <Link to={fundPath(d, id)}> ເບິ່ງເງື່ອນໄຂກອງທຶນ ↗ </Link>
       </p>
     );
   return (
     <div className="activity-row">
       <div>
         <Link to={fundPath(d, id)}>
-          Fund #{id.toString()} · {ofl(q.data)} OFL
+          {" "}
+          ກອງທຶນ # {id.toString()} · {ofl(q.data)} OFL
         </Link>
-        <p>
-          100% to the original donor wallet · native gas required · no expiry
-        </p>
+        <p> ຄືນ 100% ໄປກະເປົາເດີມ · ມີຄ່າທຳນຽມເຄືອຂ່າຍ · ບໍ່ມີວັນໝົດອາຍຸ </p>
         <code className="hash">{address}</code>
         <TxFeedback state={tx.state} d={d} />
       </div>

@@ -23,7 +23,7 @@ export function WalletPage() {
   return defaultDeployment ? (
     <WalletContent />
   ) : (
-    <EmptyState description="Deploy the official contracts first." />
+    <EmptyState description="ລະບົບຍັງບໍ່ພ້ອມໃຊ້ງານ. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ." />
   );
 }
 function WalletContent() {
@@ -49,9 +49,7 @@ function WalletContent() {
           args: [to],
         })
       )
-        throw Error(
-          "Protected OpenFund address: choose a fund and use Donate.",
-        );
+        throw Error("ກະລຸນາເລືອກກອງທຶນ ແລະໃຊ້ປຸ່ມສະໜັບສະໜູນເພື່ອໂອນໃຫ້ກອງທຶນ.");
       await tx.send(
         d.oflTokenAddress,
         encodeFunctionData({
@@ -70,23 +68,27 @@ function WalletContent() {
         <h1>{t("wallet")}</h1>
         <Connect />
       </div>
-      <Notice title="DEMO OFL · NOT FIAT-BACKED">
-        1 OFL ≈ 1 LAK is a target reference. No fiat mint or redemption is
-        available. Local seed tools are CLI-only and require Anvil.
+      <Notice title="OFL ທົດລອງ · ບໍ່ມີເງິນກີບຄ້ຳປະກັນ">
+        {" "}
+        1 OFL ≈ 1 ກີບ ເປັນພຽງຄ່າອ້າງອີງ. OFL ທົດລອງບໍ່ສາມາດຊື້
+        ຫຼືແລກຄືນເປັນເງິນກີບໄດ້.{" "}
       </Notice>
       <div className="detail-grid">
-        <Panel title="Balances & receive">
+        <Panel title="ຍອດຄົງເຫຼືອ ແລະການຮັບເງິນ">
           <div className="stack">
             <code className="hash">
-              {c.address || "Connect MetaMask to receive OFL."}
+              {c.address || "ເຊື່ອມ MetaMask ເພື່ອຮັບ OFL."}
             </code>
             <div className="metrics">
               <div className="metric">
-                <span>OFL balance</span>
+                <span> ຍອດ OFL </span>
                 <strong>{ofl(balances.data?.ofl)}</strong>
               </div>
               <div className="metric">
-                <span>Native gas ({chainFor(d).nativeCurrency.symbol})</span>
+                <span>
+                  {" "}
+                  ຍອດສຳລັບຄ່າທຳນຽມ ( {chainFor(d).nativeCurrency.symbol})
+                </span>
                 <strong>
                   {balances.data
                     ? formatUnits(
@@ -103,13 +105,14 @@ function WalletContent() {
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(c.address!);
-                  setMessage("Address copied.");
+                  setMessage("ສຳເນົາທີ່ຢູ່ແລ້ວ.");
                 } catch (e) {
                   setError(e);
                 }
               }}
             >
-              Copy receive address
+              {" "}
+              ສຳເນົາທີ່ຢູ່ຮັບເງິນ{" "}
             </Button>
             <Button
               variant="outline"
@@ -125,16 +128,15 @@ function WalletContent() {
                     },
                   });
                   setMessage(
-                    ok
-                      ? "OFL token added to MetaMask."
-                      : "Token was not added.",
+                    ok ? "ເພີ່ມ OFL ໃນ MetaMask ແລ້ວ." : "ຍັງບໍ່ໄດ້ເພີ່ມ OFL.",
                   );
                 } catch (e) {
                   setError(e);
                 }
               }}
             >
-              Add OFL to MetaMask
+              {" "}
+              ເພີ່ມ OFL ໃນ MetaMask{" "}
             </Button>
             {d.explorerUrl && c.address ? (
               <a
@@ -142,19 +144,21 @@ function WalletContent() {
                 target="_blank"
                 rel="noreferrer"
               >
-                View wallet on explorer ↗
+                {" "}
+                ເບິ່ງກະເປົາໃນເວັບກວດສອບ ↗{" "}
               </a>
             ) : (
               <small>
-                This network has no configured block explorer. Public receipts
-                and hashes are available through RPC.
+                {" "}
+                ເຄືອຂ່າຍນີ້ຍັງບໍ່ມີເວັບກວດສອບພາຍນອກ.
+                ເຈົ້າຍັງເບິ່ງປະຫວັດໃນລະບົບນີ້ໄດ້.{" "}
               </small>
             )}
             <small>{message}</small>
             <ErrorNotice error={balances.error || error} />
           </div>
         </Panel>
-        <Panel title="Send OFL to a wallet">
+        <Panel title="ໂອນ OFL ໃຫ້ກະເປົາອື່ນ">
           <FieldGroup>
             <TextField
               label={t("recipient")}
@@ -166,11 +170,13 @@ function WalletContent() {
               disabled={!c.address || tx.busy || c.chainId !== d.chainId}
               onClick={send}
             >
-              Send OFL · MetaMask
+              {" "}
+              ໂອນ OFL ຜ່ານ MetaMask{" "}
             </Button>
             <small>
-              Ordinary ERC-20 send. Protected OpenFund recipients must use the
-              Donate flow with a fund ID.
+              {" "}
+              ສຳລັບໂອນໃຫ້ກະເປົາອື່ນເທົ່ານັ້ນ. ຖ້າຕ້ອງການຊ່ວຍກອງທຶນ
+              ໃຫ້ໃຊ້ປຸ່ມສະໜັບສະໜູນໃນໜ້າກອງທຶນ.{" "}
             </small>
             <TxFeedback state={tx.state} d={d} />
           </FieldGroup>

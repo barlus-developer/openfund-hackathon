@@ -61,7 +61,7 @@ describe("wallet and feedback presentation", () => {
     mocks.connection.isConnected = false;
     mocks.error = Error("4001 rejected");
     render(wrapper(<Connect />));
-    expect(screen.getByText(/Wallet request rejected/)).toBeInTheDocument();
+    expect(screen.getByText(/ຍົກເລີກຄຳຂໍ/)).toBeInTheDocument();
     mocks.error = null;
   });
   it("distinguishes pending from confirmation", () => {
@@ -76,8 +76,8 @@ describe("wallet and feedback presentation", () => {
         />,
       ),
     );
-    expect(screen.getByText("Pending")).toBeInTheDocument();
-    expect(screen.queryByText("Confirmed")).not.toBeInTheDocument();
+    expect(screen.getByText("ກຳລັງລໍຖ້າຢືນຢັນ")).toBeInTheDocument();
+    expect(screen.queryByText("ຢືນຢັນສຳເລັດ")).not.toBeInTheDocument();
   });
   it("renders an explicit no-refund empty state", () => {
     render(

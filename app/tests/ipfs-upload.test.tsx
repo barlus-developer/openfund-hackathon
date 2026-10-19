@@ -17,17 +17,17 @@ describe("report publishing UI", () => {
     const file = Object.assign(new File(["evidence"], "evidence.txt"), {
       arrayBuffer: async () => stringToBytes("evidence").buffer,
     });
-    fireEvent.change(screen.getByLabelText(/Public document/), {
+    fireEvent.change(screen.getByLabelText(/ເລືອກເອກະສານສາທາລະນະ/), {
       target: { files: [file] },
     });
     const user = userEvent.setup();
     await user.type(
-      screen.getByLabelText("IPFS API endpoint"),
+      screen.getByLabelText("ທີ່ຢູ່ບໍລິການເກັບໄຟລ໌ IPFS"),
       "https://ipfs.example.org",
     );
-    const credential = screen.getByLabelText(/Authorization header/);
+    const credential = screen.getByLabelText(/ລະຫັດອະນຸຍາດ/);
     await user.type(credential, "Bearer session-token");
-    await user.click(screen.getByRole("button", { name: /Upload to IPFS/ }));
+    await user.click(screen.getByRole("button", { name: /ອັບໂຫຼດເອກະສານ/ }));
     await waitFor(() =>
       expect(uploaded).toHaveBeenCalledWith(
         `ipfs://${cid}`,
@@ -36,29 +36,29 @@ describe("report publishing UI", () => {
     );
     expect(credential).toHaveValue("");
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Publish the reference below",
+      "ກົດເຜີຍແຜ່ລາຍງານດ້ານລຸ່ມ",
     );
   });
   it("requires a selected file and handles an invalid replacement without uploading the old file", async () => {
     render(<IPFSUpload onHash={vi.fn()} onUploaded={vi.fn()} />);
-    const button = screen.getByRole("button", { name: /Upload to IPFS/ });
+    const button = screen.getByRole("button", { name: /ອັບໂຫຼດເອກະສານ/ });
     expect(button).toBeDisabled();
     const file = Object.assign(new File(["evidence"], "evidence.txt"), {
       arrayBuffer: async () => stringToBytes("evidence").buffer,
     });
-    fireEvent.change(screen.getByLabelText(/Public document/), {
+    fireEvent.change(screen.getByLabelText(/ເລືອກເອກະສານສາທາລະນະ/), {
       target: { files: [file] },
     });
     await userEvent.type(
-      screen.getByLabelText("IPFS API endpoint"),
+      screen.getByLabelText("ທີ່ຢູ່ບໍລິການເກັບໄຟລ໌ IPFS"),
       "https://ipfs.example.org",
     );
     await waitFor(() => expect(button).toBeEnabled());
     const tooLarge = Object.defineProperty(file, "size", { value: 5_000_001 });
-    fireEvent.change(screen.getByLabelText(/Public document/), {
+    fireEvent.change(screen.getByLabelText(/ເລືອກເອກະສານສາທາລະນະ/), {
       target: { files: [tooLarge] },
     });
     expect(button).toBeDisabled();
-    expect(screen.getByText("Choose a document up to 5 MB.")).toBeVisible();
+    expect(screen.getByText("ກະລຸນາເລືອກເອກະສານບໍ່ເກີນ 5 MB.")).toBeVisible();
   });
 });

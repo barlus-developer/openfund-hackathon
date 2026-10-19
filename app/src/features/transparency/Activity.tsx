@@ -1,3 +1,4 @@
+import { eventLabels } from "@/app/labels";
 import { useActivity } from "@/hooks/useActivity";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,8 +22,8 @@ export function ScanControls({ q }: { q: ReturnType<typeof useActivity> }) {
     <div className="stack">
       <small>
         {q.coverage
-          ? `Scanned through block ${q.coverage.to} of ${q.coverage.head}. ${q.hasNextPage ? "Partial history: load the next block window." : "Caught up at the last fetch; refresh for new blocks."}`
-          : "History is read in windows of up to 2,000 blocks."}
+          ? `ໂຫຼດຮອດບັນທຶກ ${q.coverage.to} / ${q.coverage.head}. ${q.hasNextPage ? "ຍັງໂຫຼດບໍ່ຄົບ. ກົດໂຫຼດເພີ່ມເພື່ອເບິ່ງລາຍການອື່ນ." : "ໂຫຼດຮອດຂໍ້ມູນລ່າສຸດແລ້ວ. ກົດໂຫຼດໃໝ່ເພື່ອອັບເດດ."}`
+          : "ກຳລັງໂຫຼດປະຫວັດເປັນຊ່ວງ. ສາມາດໂຫຼດເພີ່ມເພື່ອເບິ່ງລາຍການອື່ນ."}
       </small>
       <div className="flex gap-2 flex-wrap">
         <Button
@@ -30,19 +31,22 @@ export function ScanControls({ q }: { q: ReturnType<typeof useActivity> }) {
           disabled={q.isFetching}
           onClick={() => q.refetch()}
         >
-          Refresh / retry
+          {" "}
+          ໂຫຼດຂໍ້ມູນໃໝ່{" "}
         </Button>
         {q.hasNextPage ? (
           <Button
             disabled={q.isFetchingNextPage}
             onClick={() => q.fetchNextPage()}
           >
-            Scan next window
+            {" "}
+            ໂຫຼດປະຫວັດເພີ່ມ{" "}
           </Button>
         ) : null}
         {q.isFetching ? (
           <Button variant="outline" onClick={q.cancel}>
-            Cancel scan
+            {" "}
+            ຢຸດການໂຫຼດ{" "}
           </Button>
         ) : null}
       </div>
@@ -55,17 +59,18 @@ export function EventRow({ event, d }: { event: Event; d: Deployment }) {
   return (
     <div className="activity-row">
       <div>
-        <strong>{event.eventName}</strong>
+        <strong>{eventLabels[event.eventName] ?? "ອັບເດດກອງທຶນ"}</strong>
         <p>
           {args.fundId !== undefined ? (
             <Link to={fundPath(d, String(args.fundId))}>
-              Fund #{String(args.fundId)} ·{" "}
+              {" "}
+              ກອງທຶນ # {String(args.fundId)} ·{" "}
             </Link>
           ) : null}
           {args.amount !== undefined
             ? `${ofl(args.amount as bigint)} OFL · `
-            : ""}
-          Block {event.blockNumber.toString()}
+            : ""}{" "}
+          ບັນທຶກ {event.blockNumber.toString()}
         </p>
         <code>
           {String(
@@ -88,11 +93,12 @@ export function EventRow({ event, d }: { event: Event; d: Deployment }) {
               `/proposals/${String(args.proposalId)}`
             }
           >
-            Proposal #{String(args.proposalId)} ↗
+            {" "}
+            ຂໍ້ສະເໜີ # {String(args.proposalId)} ↗
           </Link>
         ) : null}
         <details>
-          <summary>Decoded event arguments</summary>
+          <summary> ລາຍລະອຽດທາງເຕັກນິກ </summary>
           <pre className="summary-box">
             {JSON.stringify(
               args,
@@ -104,7 +110,7 @@ export function EventRow({ event, d }: { event: Event; d: Deployment }) {
       </div>
       <div>
         <TxHash d={d} hash={event.transactionHash} />
-        <small>Log #{event.logIndex}</small>
+        <small> ລາຍການ # {event.logIndex}</small>
       </div>
     </div>
   );
@@ -136,12 +142,8 @@ export function ActivityFeed({
     .reverse();
   return (
     <Panel
-      title={
-        payoutsOnly
-          ? "ການຈ່າຍເງິນ / Executed payouts"
-          : "Public on-chain activity"
-      }
-      description="Indexed contract events · logs deduplicated by transaction and log index"
+      title={payoutsOnly ? "ປະຫວັດການຈ່າຍເງິນ" : "ປະຫວັດການດຳເນີນງານສາທາລະນະ"}
+      description="ຕິດຕາມການສະໜັບສະໜູນ ການອະນຸມັດ ແລະການໃຊ້ເງິນຂອງກອງທຶນ"
     >
       <div className="stack">
         <ScanControls q={q} />
@@ -174,6 +176,6 @@ export function GlobalActivity() {
   return defaultDeployment ? (
     <ActivityFeed d={defaultDeployment} />
   ) : (
-    <EmptyState description="No official deployment configured." />
+    <EmptyState description="ລະບົບຍັງບໍ່ພ້ອມໃຊ້ງານ. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ." />
   );
 }

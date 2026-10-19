@@ -45,11 +45,9 @@ export function Reports() {
       const normalizedURI = normalizeContentURI(uri);
       contentURL(normalizedURI);
       if (!/^(0|[1-9]\d*)$/.test(pid))
-        throw Error("Invalid payout proposal ID.");
+        throw Error("ໝາຍເລກຂໍ້ສະເໜີການຈ່າຍເງິນບໍ່ຖືກຕ້ອງ.");
       if (!/^0x[\da-fA-F]{64}$/.test(hash))
-        throw Error(
-          "A keccak256 content-byte hash is required. Choose a local file or paste its digest.",
-        );
+        throw Error("ກະລຸນາເລືອກໄຟລ໌ ຫຼືປ້ອນລະຫັດຢືນຢັນເອກະສານ.");
       await tx.send(
         d.openFundAddress,
         encodeFunctionData({
@@ -72,7 +70,7 @@ export function Reports() {
     <div className="detail-grid">
       <Panel
         title={t("reports")}
-        description="Public references. No claim of independently verified impact."
+        description="ເອກະສານຈາກກອງທຶນ ທີ່ທຸກຄົນເປີດເບິ່ງໄດ້. ເນື້ອຫາຍັງບໍ່ຜ່ານການກວດສອບອິດສະຫຼະ."
       >
         <div className="stack">
           <ScanControls q={q} />
@@ -85,32 +83,28 @@ export function Reports() {
               />
             ))
           ) : (
-            <EmptyState description="No report references in the scanned block range." />
+            <EmptyState description="ຍັງບໍ່ພົບລາຍງານໃນຂໍ້ມູນທີ່ໂຫຼດ." />
           )}
         </div>
       </Panel>
-      <Panel title="Publish report reference (manager)">
+      <Panel title="ເຜີຍແຜ່ລາຍງານ (ສຳລັບຜູ້ຈັດການ)">
         <FieldGroup>
-          <Notice title="Protect beneficiaries">
-            {t("privacy")} A CID does not guarantee permanent availability.
+          <Notice title="ປົກປ້ອງຜູ້ຮັບການຊ່ວຍເຫຼືອ">
+            {t("privacy")} ລິ້ງໄຟລ໌ບໍ່ໄດ້ຮັບຮອງວ່າໄຟລ໌ຈະຖືກເກັບໄວ້ຖາວອນ.{" "}
           </Notice>
+          <TextField label="ຫົວຂໍ້ລາຍງານ" value={title} onChange={setTitle} />
           <TextField
-            label="ຫົວຂໍ້ / Report title"
-            value={title}
-            onChange={setTitle}
-          />
-          <TextField
-            label="Executed payout proposal ID (0 for general report)"
+            label="ໝາຍເລກການຈ່າຍເງິນ (0 ສຳລັບລາຍງານທົ່ວໄປ)"
             value={pid}
             onChange={setPid}
           />
           <TextField
-            label="Content IPFS URI / CID reference"
+            label="ລິ້ງ ຫຼືລະຫັດເອກະສານ IPFS"
             value={uri}
             onChange={setURI}
           />
           <TextField
-            label="keccak256 of exact document bytes"
+            label="ລະຫັດຢືນຢັນເອກະສານ"
             value={hash}
             onChange={setHash}
           />
@@ -126,7 +120,8 @@ export function Reports() {
             disabled={!manager || tx.busy || c.chainId !== d.chainId}
             onClick={publish}
           >
-            ເຜີຍແຜ່ລາຍງານ / Publish reference
+            {" "}
+            ເຜີຍແຜ່ລາຍງານ{" "}
           </Button>
           <TxFeedback state={tx.state} d={d} />
         </FieldGroup>
@@ -147,12 +142,14 @@ function ReportItem({ event, d }: { event: Activity; d: Deployment }) {
     <div className="stack">
       <h3>{String(event.args.title)}</h3>
       <p>
-        Proposal #{String(event.args.proposalId)} · Block{" "}
+        {" "}
+        ຂໍ້ສະເໜີ # {String(event.args.proposalId)} · ບັນທຶກ{" "}
         {event.blockNumber.toString()}
       </p>
       {url ? (
         <a href={url} target="_blank" rel="noreferrer">
-          Open public document ↗
+          {" "}
+          ເປີດເບິ່ງເອກະສານ ↗{" "}
         </a>
       ) : (
         <code>{String(event.args.contentURI)}</code>
@@ -161,7 +158,7 @@ function ReportItem({ event, d }: { event: Activity; d: Deployment }) {
       <Button
         variant="outline"
         onClick={async () => {
-          setResult("Fetching…");
+          setResult("ກຳລັງໂຫຼດ…");
           setError(undefined);
           try {
             const r = await verifyContent(
@@ -169,7 +166,7 @@ function ReportItem({ event, d }: { event: Activity; d: Deployment }) {
               event.args.contentHash as `0x${string}`,
             );
             setResult(
-              `${r.match ? "Integrity matched" : "HASH MISMATCH"} · ${r.bytes} bytes · ${r.actual}`,
+              `${r.match ? "ເອກະສານກົງກັນ" : "ເອກະສານບໍ່ກົງກັນ"} · ${r.bytes} ໄບຕ໌ · ${r.actual}`,
             );
           } catch (e) {
             setError(e);
@@ -177,7 +174,8 @@ function ReportItem({ event, d }: { event: Activity; d: Deployment }) {
           }
         }}
       >
-        Verify document byte integrity
+        {" "}
+        ກວດສອບໄຟລ໌ເອກະສານ{" "}
       </Button>
       <small>{result}</small>
       <ErrorNotice error={error} />

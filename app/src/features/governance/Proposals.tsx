@@ -1,3 +1,4 @@
+import { actionLabels, proposalStatusLabels } from "@/app/labels";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQueries, useQuery } from "@tanstack/react-query";
@@ -6,7 +7,7 @@ import { encodeFunctionData } from "viem";
 import { useFundContext } from "@/features/funds/FundLayout";
 import { useActivity } from "@/hooks/useActivity";
 import { useTransaction } from "@/hooks/useTransaction";
-import { useProposal, actionNames, proposalStatuses } from "@/web3/reads";
+import { useProposal } from "@/web3/reads";
 import { openFundAbi } from "@/web3/generated/OpenFund";
 import { clientFor, fundPath } from "@/web3/deployments";
 import {
@@ -29,25 +30,26 @@ export function Governance() {
   return (
     <div className="stack">
       <Panel
-        title="Fund-specific governance"
-        description="No protocol administrator can override these wallets."
+        title="ຜູ້ຮັບຜິດຊອບຂອງກອງທຶນ"
+        description="ບໍ່ມີຜູ້ດູແລລະບົບທີ່ປ່ຽນການຕັດສິນໃຈແທນກະເປົາເຫຼົ່ານີ້ໄດ້."
       >
         <dl className="data-list">
-          <dt>Manager</dt>
+          <dt> ຜູ້ຈັດການ </dt>
           <dd>
             <code>{row.fund.manager}</code>
           </dd>
-          <dt>Approval threshold</dt>
+          <dt> ຈຳນວນການອະນຸມັດທີ່ຕ້ອງການ </dt>
           <dd>
-            {row.fund.threshold} / {row.approvers.length} · Minimum{" "}
+            {row.fund.threshold} / {row.approvers.length} · ຂັ້ນຕ່ຳ{" "}
             {row.fund.config.minimumApprovalThreshold}
           </dd>
-          <dt>Versions</dt>
+          <dt> ຮຸ່ນຂໍ້ມູນ </dt>
           <dd>
-            Governance {row.fund.governanceVersion.toString()} · Recipient rules{" "}
+            {" "}
+            ການອະນຸມັດ {row.fund.governanceVersion.toString()} · ເງື່ອນໄຂຜູ້ຮັບ{" "}
             {row.fund.recipientRulesVersion.toString()}
           </dd>
-          <dt>Current approvers</dt>
+          <dt> ຜູ້ອະນຸມັດປັດຈຸບັນ </dt>
           <dd>
             {row.approvers.map((a) => (
               <code className="hash" key={a}>
@@ -58,15 +60,16 @@ export function Governance() {
         </dl>
         <div className="mt-6">
           <ActionLink to={fundPath(d, row.id) + "/manage"} outline>
-            Propose an action / recovery
+            {" "}
+            ສະເໜີການດຳເນີນງານ{" "}
           </ActionLink>
         </div>
       </Panel>
-      <Notice title="Threshold & key-loss risk">
-        Submission does not cast a vote. Each approver signs one on-chain
-        approval. Sensitive actions wait 24 hours; final approval starts a
-        separate 7-day execution window. If remaining wallets cannot reach the
-        threshold, funds may be inaccessible permanently.
+      <Notice title="ຈຳນວນການອະນຸມັດ ແລະການເຂົ້າກະເປົາ">
+        {" "}
+        ການສະເໜີຍັງບໍ່ແມ່ນການອະນຸມັດ. ຜູ້ອະນຸມັດແຕ່ລະຄົນຕ້ອງຢືນຢັນຜ່ານກະເປົາ.
+        ການປ່ຽນແປງສຳຄັນຕ້ອງລໍຖ້າ 24 ຊົ່ວໂມງ ແລະດຳເນີນການພາຍໃນ 7
+        ວັນຫຼັງອະນຸມັດຄົບ. ຖ້າອະນຸມັດບໍ່ຄົບຈຳນວນ ເງິນອາດຖືກລັອກຖາວອນ.{" "}
       </Notice>
       <ProposalList />
     </div>
@@ -97,12 +100,13 @@ export function ProposalList() {
     })),
   });
   return (
-    <Panel title="ຂໍ້ສະເໜີ / Proposals">
+    <Panel title="ຂໍ້ສະເໜີ">
       <div className="stack">
         <ScanControls q={q} />
         <small>
-          Showing the newest {Math.min(ids.length, limit)} discovered proposals
-          in the loaded log range.
+          {" "}
+          ສະແດງຂໍ້ສະເໜີລ່າສຸດ {Math.min(ids.length, limit)}{" "}
+          ລາຍການຈາກຂໍ້ມູນທີ່ໂຫຼດແລ້ວ.{" "}
         </small>
         {q.isLoading ? (
           <Loading />
@@ -118,15 +122,17 @@ export function ProposalList() {
               >
                 <div>
                   <strong>
-                    #{ids[i].toString()} · {actionNames[r.data[0].action.kind]}
+                    #{ids[i].toString()} · {actionLabels[r.data[0].action.kind]}
                   </strong>
                   <p>{r.data[0].action.purpose}</p>
                   <small>
-                    {r.data[0].approvals}/{row.fund.threshold} approvals ·{" "}
+                    {r.data[0].approvals}/{row.fund.threshold} ການອະນຸມັດ ·{" "}
                     {date(r.data[0].createdAt)}
                   </small>
                 </div>
-                <Badge variant="outline">{proposalStatuses[r.data[1]]}</Badge>
+                <Badge variant="outline">
+                  {proposalStatusLabels[r.data[1]]}
+                </Badge>
               </Link>
             ) : r.error ? (
               <ErrorNotice key={ids[i].toString()} error={r.error} />
@@ -137,7 +143,8 @@ export function ProposalList() {
         )}
         {ids.length > limit ? (
           <Button variant="outline" onClick={() => setLimit((n) => n + 12)}>
-            Load 12 more proposals
+            {" "}
+            ໂຫຼດຂໍ້ສະເໜີເພີ່ມ 12 ລາຍການ{" "}
           </Button>
         ) : null}
       </div>
@@ -150,7 +157,7 @@ export function ProposalDetail() {
   try {
     id = positiveId(proposalId);
   } catch {
-    return <EmptyState description="Invalid proposal ID." />;
+    return <EmptyState description="ໝາຍເລກຂໍ້ສະເໜີບໍ່ຖືກຕ້ອງ." />;
   }
   return <Detail id={id} />;
 }
@@ -177,9 +184,7 @@ function Detail({ id }: { id: bigint }) {
   if (!q.data) return <EmptyState />;
   const [p, s, ready, expiry] = q.data;
   if (p.fundId !== row.id)
-    return (
-      <EmptyState description="This proposal belongs to a different fund." />
-    );
+    return <EmptyState description="ຂໍ້ສະເໜີນີ້ເປັນຂອງກອງທຶນອື່ນ." />;
   const isApprover = row.approvers.some(
       (a) => a.toLowerCase() === c.address?.toLowerCase(),
     ),
@@ -193,53 +198,55 @@ function Detail({ id }: { id: bigint }) {
   return (
     <div className="stack">
       <Panel
-        title={`#${id} · ${actionNames[p.action.kind]}`}
-        description={proposalStatuses[s]}
+        title={`#${id} · ${actionLabels[p.action.kind]}`}
+        description={proposalStatusLabels[s]}
       >
         <div className="stack">
           <dl className="data-list">
-            <dt>Proposer</dt>
+            <dt> ຜູ້ສະເໜີ </dt>
             <dd>
               <code>{p.proposer}</code>
             </dd>
-            <dt>Recipient / target</dt>
+            <dt> ຜູ້ຮັບ / ກະເປົາທີ່ກ່ຽວຂ້ອງ </dt>
             <dd>
               <code>{p.action.target}</code>
             </dd>
-            <dt>Amount / threshold value</dt>
+            <dt> ຈຳນວນ / ຈຳນວນອະນຸມັດ </dt>
             <dd>
               {ofl(p.action.amount)} OFL / {p.action.value}
             </dd>
-            <dt>Purpose</dt>
+            <dt> ຈຸດປະສົງ </dt>
             <dd>{p.action.purpose}</dd>
-            <dt>Evidence reference</dt>
+            <dt> ຫຼັກຖານປະກອບ </dt>
             <dd>
-              <code>{p.action.evidenceURI || "None"}</code>
+              <code>{p.action.evidenceURI || "ບໍ່ມີ"}</code>
               <code className="hash">{p.action.evidenceHash}</code>
             </dd>
-            <dt>Approvals</dt>
+            <dt> ການອະນຸມັດ </dt>
             <dd>
               {p.approvals} / {row.fund.threshold}
             </dd>
-            <dt>Submitted / approved</dt>
+            <dt> ວັນສະເໜີ / ວັນອະນຸມັດ </dt>
             <dd>
               {date(p.createdAt)} / {date(p.approvedAt)}
             </dd>
-            <dt>Executable / expiry</dt>
+            <dt> ວັນທີດຳເນີນການໄດ້ / ວັນໝົດອາຍຸ </dt>
             <dd>
               {date(ready)} / {date(expiry)}
             </dd>
-            <dt>Versions</dt>
+            <dt> ຮຸ່ນຂໍ້ມູນ </dt>
             <dd>
-              Governance {p.governanceVersion.toString()} · Recipient{" "}
+              {" "}
+              ການອະນຸມັດ {p.governanceVersion.toString()} · ຜູ້ຮັບ{" "}
               {p.recipientRulesVersion.toString()}
             </dd>
-            <dt>Latest fund balance</dt>
+            <dt> ຍອດຄົງເຫຼືອລ່າສຸດ </dt>
             <dd>{ofl(row.fund.balance)} OFL</dd>
           </dl>
           <Notice>
-            Execution revalidates state, balance, recipient policy, quorum,
-            timelock and versions. Pending proposals do not reserve money.
+            {" "}
+            ລະບົບຈະກວດສິດ ຍອດເງິນ ຜູ້ຮັບ ແລະການອະນຸມັດອີກຄັ້ງກ່ອນດຳເນີນການ.
+            ຂໍ້ສະເໜີທີ່ລໍຖ້າບໍ່ໄດ້ຈອງເງິນໄວ້.{" "}
           </Notice>
           <Connect chainId={d.chainId} />
           <div className="flex flex-wrap gap-3">
@@ -263,7 +270,7 @@ function Detail({ id }: { id: bigint }) {
               }
             >
               {t("approve")}
-              {voted.data ? " · Already approved" : ""}
+              {voted.data ? " · ອະນຸມັດແລ້ວ" : ""}
             </Button>
             <Button
               disabled={
@@ -307,28 +314,28 @@ function Detail({ id }: { id: bigint }) {
           </div>
           <small>
             {!hasFunds
-              ? "Insufficient latest balance. Other proposals may already have spent this fund."
+              ? "ຍອດເງິນບໍ່ພຽງພໍ. ອາດມີການຈ່າຍເງິນລາຍການອື່ນໄປແລ້ວ."
               : s === 1
-                ? "Sensitive action is timelocked."
+                ? "ກະລຸນາລໍຖ້າໃຫ້ຄົບກຳນົດກ່ອນດຳເນີນການ."
                 : s !== 2
-                  ? "Execute becomes available after the current proposal checks pass."
-                  : "Anyone with a wallet on this chain may execute."}
+                  ? "ຈະດຳເນີນການໄດ້ເມື່ອຂໍ້ສະເໜີຜ່ານເງື່ອນໄຂຄົບ."
+                  : "ຜູ້ທີ່ເຊື່ອມກະເປົາໃນເຄືອຂ່າຍນີ້ສາມາດດຳເນີນການໄດ້."}
           </small>
           <TxFeedback state={tx.state} d={d} />
         </div>
       </Panel>
-      <Panel title="Individual approval records">
+      <Panel title="ປະຫວັດການອະນຸມັດ">
         <ScanControls q={activity} />
         {signed.length ? (
           signed.map((e) => (
             <p key={`${e.transactionHash}:${e.logIndex}`}>
-              <code>{String(e.args.approver)}</code> · Block{" "}
+              <code>{String(e.args.approver)}</code> · ບັນທຶກ{" "}
               {e.blockNumber.toString()}
               <code className="hash">{e.transactionHash}</code>
             </p>
           ))
         ) : (
-          <EmptyState description="No approval records in the loaded block range." />
+          <EmptyState description="ຍັງບໍ່ພົບການອະນຸມັດໃນຂໍ້ມູນທີ່ໂຫຼດ." />
         )}
       </Panel>
     </div>

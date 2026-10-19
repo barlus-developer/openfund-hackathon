@@ -42,7 +42,7 @@ export function IPFSUpload({
     request.current = controller;
     setBusy(true);
     setError(undefined);
-    setStatus("Uploading public document to IPFS…");
+    setStatus("ກຳລັງອັບໂຫຼດເອກະສານສາທາລະນະ…");
     try {
       const result = await uploadIPFS(
         file,
@@ -53,7 +53,7 @@ export function IPFSUpload({
       );
       onUploaded(result.uri, result.hash);
       setStatus(
-        `Uploaded: ${result.uri}. Publish the reference below to anchor it on-chain.`,
+        `ອັບໂຫຼດແລ້ວ: ${result.uri}. ກົດເຜີຍແຜ່ລາຍງານດ້ານລຸ່ມເພື່ອບັນທຶກໃນລະບົບ.`,
       );
     } catch (e) {
       setError(e);
@@ -70,7 +70,8 @@ export function IPFSUpload({
     <>
       <Field>
         <FieldLabel htmlFor="report-file">
-          ເລືອກເອກະສານ / Public document (max 5 MB)
+          {" "}
+          ເລືອກເອກະສານສາທາລະນະ (ບໍ່ເກີນ 5 MB){" "}
         </FieldLabel>
         <Input
           id="report-file"
@@ -84,7 +85,7 @@ export function IPFSUpload({
             setStatus("");
             if (!next) return;
             if (next.size > MAX_DOCUMENT_BYTES) {
-              setError(Error("Choose a document up to 5 MB."));
+              setError(Error("ກະລຸນາເລືອກເອກະສານບໍ່ເກີນ 5 MB."));
               return;
             }
             try {
@@ -93,13 +94,13 @@ export function IPFSUpload({
               setFile(next);
               onHash(hash);
             } catch {
-              setError(Error("Could not read the selected document."));
+              setError(Error("ບໍ່ສາມາດອ່ານເອກະສານນີ້ໄດ້. ກະລຸນາເລືອກໃໝ່."));
             }
           }}
         />
       </Field>
       <SelectField
-        label="ອັບໂຫຼດ IPFS / Upload provider"
+        label="ບ່ອນເກັບເອກະສານ"
         value={provider}
         onChange={(value) => {
           if (!busy) {
@@ -109,33 +110,33 @@ export function IPFSUpload({
           }
         }}
         options={[
-          ["kubo", "My IPFS / Kubo endpoint (HTTPS or localhost)"],
-          ["pinata", "Pinata public IPFS (signed upload URL)"],
+          ["kubo", "ພື້ນທີ່ເກັບໄຟລ໌ຂອງຂ້ອຍ (IPFS)"],
+          ["pinata", "ພື້ນທີ່ເກັບໄຟລ໌ Pinata"],
         ]}
       />
       {provider === "kubo" ? (
         <>
           <TextField
-            label="IPFS API endpoint"
+            label="ທີ່ຢູ່ບໍລິການເກັບໄຟລ໌ IPFS"
             value={endpoint}
             onChange={setEndpoint}
-            help="Your HTTPS Kubo API or authenticated reverse-proxy URL; /api/v0/add is appended when needed."
+            help="ປ້ອນທີ່ຢູ່ HTTPS ຂອງບໍລິການເກັບໄຟລ໌ທີ່ເຈົ້າໃຊ້."
           />
           <TextField
-            label="Authorization header (optional, session only)"
+            label="ລະຫັດອະນຸຍາດ (ຖ້າມີ, ໃຊ້ຊົ່ວຄາວ)"
             type="password"
             value={authorization}
             onChange={setAuthorization}
-            help="For example a scoped Bearer or Basic header for your own endpoint. Cleared after upload."
+            help="ໃຊ້ລະຫັດຈາກຜູ້ໃຫ້ບໍລິການ. ລະບົບຈະລ້າງລະຫັດຫຼັງອັບໂຫຼດ."
           />
         </>
       ) : (
         <TextField
-          label="Short-lived Pinata signed upload URL"
+          label="ລິ້ງອັບໂຫຼດຊົ່ວຄາວຈາກ Pinata"
           type="password"
           value={signedURL}
           onChange={setSignedURL}
-          help="Generate using npm run ipfs:sign with your CLI-only PINATA_JWT. No API key is needed in this app."
+          help="ໃຊ້ລິ້ງອັບໂຫຼດຊົ່ວຄາວຈາກຜູ້ດູແລພື້ນທີ່ເກັບໄຟລ໌ຂອງເຈົ້າ."
         />
       )}
       <div className="flex flex-wrap gap-2">
@@ -146,19 +147,20 @@ export function IPFSUpload({
           }
           onClick={upload}
         >
-          {busy ? "ກຳລັງອັບໂຫຼດ / Uploading…" : "ອັບໂຫຼດ IPFS / Upload to IPFS"}
+          {busy ? "ກຳລັງອັບໂຫຼດ…" : "ອັບໂຫຼດເອກະສານ"}
         </Button>
         {busy && (
           <Button variant="outline" onClick={() => request.current?.abort()}>
-            Cancel upload
+            {" "}
+            ຍົກເລີກການອັບໂຫຼດ{" "}
           </Button>
         )}
       </div>
       <small>
-        CID pasting works without an account. Uploads publish real public
-        content; your node or pinning service must keep it available. Endpoint
-        CORS must allow this app’s origin. Canceling a request may not undo a
-        completed upload.
+        {" "}
+        ສາມາດວາງລິ້ງເອກະສານທີ່ມີແລ້ວໄດ້. ໄຟລ໌ທີ່ອັບໂຫຼດເປັນສາທາລະນະ
+        ແລະຕ້ອງມີບ່ອນເກັບຮັກສາ.
+        ການຍົກເລີກບໍ່ໄດ້ລຶບໄຟລ໌ທີ່ອັບໂຫຼດສຳເລັດແລ້ວ.{" "}
       </small>
       <p role="status">{status}</p>
       <ErrorNotice error={error} />

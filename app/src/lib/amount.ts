@@ -16,7 +16,7 @@ export const shorten = (a?: string) =>
 export function date(value: bigint) {
   return value === 0n
     ? "—"
-    : new Date(Number(value) * 1000).toLocaleString(undefined, {
+    : new Date(Number(value) * 1000).toLocaleString("lo-LA", {
         timeZoneName: "short",
       });
 }

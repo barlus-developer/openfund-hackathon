@@ -1,9 +1,7 @@
-import { useState } from "react";
-import { Link, NavLink, Outlet, useMatch } from "react-router-dom";
-import { ArrowUpRight, HeartHandshake, Menu, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, NavLink, Outlet, useLocation, useMatch } from "react-router-dom";
+import { ArrowUpRight, Layers, Menu, ShieldCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useLanguage } from "./i18n";
 import { Connect } from "@/features/wallet/Connect";
 import {
   defaultDeployment,
@@ -11,65 +9,79 @@ import {
   deploymentConfigurationError,
 } from "@/web3/deployments";
 import { ErrorNotice } from "@/components/common";
+
 export function Layout() {
-  const { t, language, setLanguage } = useLanguage();
   const [menu, setMenu] = useState(false);
+  const { pathname } = useLocation();
   const fundRoute = useMatch("/funds/:version/*");
   const d = resolveDeployment(fundRoute?.params.version) ?? defaultDeployment;
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
   return (
     <>
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById("main-content")?.focus();
+        }}
+      >
+        ຂ້າມໄປເນື້ອຫາ
+      </a>
+      <div className="ambient-background" aria-hidden="true">
+        <span />
+        <span />
+      </div>
       <div className="network-bar">
-        {d?.name ?? "OpenFund"} ·{" "}
+        <span className="status-dot" />
         {d?.demoMode
-          ? "DEMO OFL / NOT FIAT-BACKED"
-          : "Experimental unaudited protocol"}
+          ? "ພື້ນທີ່ທົດລອງ · OFL ທົດລອງບໍ່ສາມາດແລກເປັນເງິນກີບໄດ້"
+          : "ລະບົບທົດລອງ · ກະລຸນາອ່ານເງື່ອນໄຂກ່ອນສະໜັບສະໜູນ"}
       </div>
       <header className="site-header">
         <div className="header-inner">
-          <Link to="/" className="brand">
+          <Link to="/" className="brand" aria-label="ໜ້າຫຼັກ">
             <span className="brand-mark">
-              <HeartHandshake />
+              <Layers />
             </span>
             <span>
-              OpenFund<span className="brand-sub">LAOS / ລາວ</span>
+              OpenFund<span className="brand-sub">ສຳລັບອົງກອນ ແລະມູນນິທິ</span>
             </span>
           </Link>
           <nav
-            aria-label="Main navigation"
+            id="main-navigation"
+            aria-label="ເມນູຫຼັກ"
             className={menu ? "main-nav open" : "main-nav"}
           >
-            {(["explore", "dashboard", "protocol", "about"] as const).map(
-              (key, i) => (
-                <NavLink
-                  key={key}
-                  to={["/funds", "/dashboard", "/protocol", "/about"][i]}
-                  onClick={() => setMenu(false)}
-                >
-                  {t(key)}
-                </NavLink>
-              ),
-            )}
+            {[
+              ["/funds", "ຄົ້ນຫາກອງທຶນ"],
+              ["/dashboard", "ກອງທຶນຂອງຂ້ອຍ"],
+              ["/about", "ວິທີໃຊ້ງານ"],
+            ].map(([to, label]) => (
+              <NavLink key={to} to={to} onClick={() => setMenu(false)}>
+                {label}
+              </NavLink>
+            ))}
           </nav>
           <div className="header-actions">
-            <Button
-              variant="ghost"
-              onClick={() => setLanguage(language === "lo" ? "en" : "lo")}
-            >
-              {language === "lo" ? "EN" : "ລາວ"}
-            </Button>
             <Connect chainId={d?.chainId} />
             <Button
-              variant="outline"
-              aria-label="Toggle navigation"
+              variant="ghost"
+              size="icon"
+              aria-label={menu ? "ປິດເມນູ" : "ເປີດເມນູ"}
+              aria-expanded={menu}
+              aria-controls="main-navigation"
               className="mobile-toggle"
               onClick={() => setMenu(!menu)}
             >
-              <Menu />
+              {menu ? <X /> : <Menu />}
             </Button>
           </div>
         </div>
       </header>
-      <main className="site-main">
+      <main id="main-content" className="site-main" tabIndex={-1}>
         <ErrorNotice error={deploymentConfigurationError} />
         <Outlet />
       </main>
@@ -77,28 +89,33 @@ export function Layout() {
         <div className="footer-inner">
           <div>
             <Link className="brand" to="/">
-              <HeartHandshake /> OpenFund Laos
+              <span className="brand-mark">
+                <Layers />
+              </span>
+              OpenFund
             </Link>
-            <p>Community funding. Public by design.</p>
+            <p>ລະດົມທຶນເພື່ອພາລະກິດຂອງອົງກອນ ແລະມູນນິທິ.</p>
           </div>
-          <div className="flex flex-col gap-2">
-            <Link to="/protocol">
-              Official deployments <ArrowUpRight className="inline-icon" />
+          <nav aria-label="ຂໍ້ມູນເພີ່ມເຕີມ" className="footer-links">
+            <Link to="/about">ວິທີໃຊ້ ແລະເງື່ອນໄຂ</Link>
+            <Link to="/transactions">
+              ຕິດຕາມການສະໜັບສະໜູນ <ArrowUpRight className="inline-icon" />
             </Link>
-            <Link to="/about">Rules, risks & privacy</Link>
-            <Link to="/transactions">Public transaction history</Link>
-          </div>
+            <Link to="/protocol">ຂໍ້ມູນເຄືອຂ່າຍ</Link>
+          </nav>
           <div className="footer-note">
             <ShieldCheck />
             <p>
-              Official protocol membership does not verify a charity’s identity.
-              OFL’s LAK value is a target reference; DEMO OFL has no fiat
-              backing.
+              ກະລຸນາກວດສອບຜູ້ຈັດການກອງທຶນກ່ອນສະໜັບສະໜູນ.
+              ຂໍ້ມູນສາທາລະນະຊ່ວຍໃຫ້ຕິດຕາມໄດ້ ແຕ່ບໍ່ໄດ້ຮັບຮອງການນຳໃຊ້ເງິນ.
             </p>
-            <Badge variant="outline">
-              Client-only · No application backend
-            </Badge>
           </div>
+        </div>
+        <div className="footer-bottom">
+          <span>OpenFund · ຮ່ວມທຶນ ຮ່ວມສ້າງ</span>
+          <span>
+            ດ້ວຍຄວາມໃສ່ໃຈ <Layers className="inline-icon" />
+          </span>
         </div>
       </footer>
     </>

@@ -38,7 +38,7 @@ test.afterEach(async () => {
 async function harness(page: Page) {
   await page.addInitScript(
     ({ rpc, accounts }) => {
-      localStorage.setItem("ofl-language", "en");
+      localStorage.setItem("ofl-language", "en"); // A stale English preference must not change the Lao-only UI.
       localStorage.removeItem("ofl-draft-v1");
       let connected = sessionStorage.getItem("test-connected") === "1",
         selected = accounts[0];
@@ -107,7 +107,7 @@ async function harness(page: Page) {
   );
   await page.goto("/e2e.html");
   await page
-    .getByRole("button", { name: "Connect MetaMask", exact: true })
+    .getByRole("button", { name: "ເຊື່ອມຕໍ່ MetaMask", exact: true })
     .click();
   await expect(page.getByText("0xf39F…2266", { exact: true })).toBeVisible();
 }
@@ -120,7 +120,6 @@ test("public routes and mobile navigation read actual seeded chain state", async
   await expect(
     page.getByText("Learning together · Vientiane", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "EN", exact: true }).click();
   for (const path of [
     "/funds",
     "/funds/local-v1/3",
@@ -140,21 +139,21 @@ test("public routes and mobile navigation read actual seeded chain state", async
     await page.goto("/#" + path);
     await expect(page.locator("main")).not.toBeEmpty();
     await expect(
-      page.getByText("RPC / transaction error", { exact: true }),
+      page.getByText("ບໍ່ສາມາດດຳເນີນການໄດ້", { exact: true }),
     ).toHaveCount(0);
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
-    page.getByRole("button", { name: "Connect MetaMask", exact: true }),
+    page.getByRole("button", { name: "ເຊື່ອມຕໍ່ MetaMask", exact: true }),
   ).toBeVisible();
   await page.goto("/");
-  await page.getByRole("button", { name: "Toggle navigation" }).click();
+  await page.getByRole("button", { name: "ເປີດເມນູ" }).click();
   await page
-    .getByRole("navigation", { name: "Main navigation" })
-    .getByRole("link", { name: "Explore funds" })
+    .getByRole("navigation", { name: "ເມນູຫຼັກ" })
+    .getByRole("link", { name: "ຄົ້ນຫາກອງທຶນ" })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Explore funds", exact: true }),
+    page.getByRole("heading", { name: "ຄົ້ນຫາກອງທຶນ", exact: true }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -169,43 +168,46 @@ test("browser wallet harness creates, donates once, approves, pays, reports and 
   await harness(page);
   await page.goto("/e2e.html#/funds/create");
   await page
-    .getByLabel("Fund title", { exact: true })
+    .getByLabel("ຊື່ກອງທຶນ", { exact: true })
     .fill("Browser verified education fund");
   await page
-    .getByLabel("Public summary", { exact: true })
+    .getByLabel("ລາຍລະອຽດສາທາລະນະ", { exact: true })
     .fill("Real on-chain browser test, snapshot isolated.");
-  await page.getByLabel("Manager wallet", { exact: true }).fill(accounts[0]);
+  await page.getByLabel("ທີ່ຢູ່ຜູ້ຈັດການ", { exact: true }).fill(accounts[0]);
   await page
-    .getByLabel(/Immutable purpose and terms/)
+    .getByLabel(/ຈຸດປະສົງ ແລະເງື່ອນໄຂຖາວອນ/)
     .fill("Public education supplies; no private beneficiary data.");
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await page.getByLabel(/Funding mode/).selectOption("1");
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await page.getByLabel(/Approvers \(one per line\)/).fill(accounts[0]);
-  await page.getByLabel(/Required approvals/).fill("1");
-  await page.getByLabel(/Immutable minimum threshold/).fill("1");
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "ຕໍ່ໄປ", exact: true }).click();
+  await page.getByLabel(/ຮູບແບບການລະດົມທຶນ/).selectOption("1");
+  await page.getByRole("button", { name: "ຕໍ່ໄປ", exact: true }).click();
+  await page.getByLabel(/ທີ່ຢູ່ກະເປົາຜູ້ອະນຸມັດ/).fill(accounts[0]);
+  await page.getByLabel(/ຈຳນວນຄົນທີ່ຕ້ອງອະນຸມັດ/).fill("1");
+  await page.getByLabel(/ຈຳນວນຄົນອະນຸມັດຂັ້ນຕ່ຳຖາວອນ/).fill("1");
+  await page.getByRole("button", { name: "ຕໍ່ໄປ", exact: true }).click();
+  await page.getByRole("button", { name: "ຕໍ່ໄປ", exact: true }).click();
   await page
-    .getByRole("button", { name: "Create fund · MetaMask", exact: true })
+    .getByRole("button", { name: "ສ້າງກອງທຶນ · MetaMask", exact: true })
     .click();
   await expect(page).toHaveURL(/funds\/local-v1\/\d+$/);
   const fundId = BigInt(page.url().split("/").at(-1)!);
   await expect(
     page.getByRole("heading", { name: "Browser verified education fund" }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Donate", exact: true }).first().click();
   await page
-    .getByLabel("OFL amount", { exact: true })
+    .getByRole("link", { name: "ຮ່ວມສະໜັບສະໜູນ", exact: true })
+    .first()
+    .click();
+  await page
+    .getByLabel("ຈຳນວນ OFL", { exact: true })
     .fill("12.000000000000000001");
   const countBefore = await page.evaluate(
     () =>
       (window as unknown as { testWallet: { sent: string[] } }).testWallet.sent
         .length,
   );
-  await page.getByRole("button", { name: /Donate 12/ }).click();
+  await page.getByRole("button", { name: /ຮ່ວມສະໜັບສະໜູນ 12/ }).click();
   await expect(
-    page.getByText("Donation receipt", { exact: true }),
+    page.getByText("ໃບຢືນຢັນການສະໜັບສະໜູນ", { exact: true }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -214,70 +216,70 @@ test("browser wallet harness creates, donates once, approves, pays, reports and 
           .sent.length,
     ),
   ).toBe(countBefore + 1);
-  await page.getByRole("link", { name: "Manage fund", exact: true }).click();
-  await page.getByLabel("Recipient address", { exact: true }).fill(accounts[1]);
+  await page.getByRole("link", { name: "ຈັດການກອງທຶນ", exact: true }).click();
+  await page.getByLabel("ທີ່ຢູ່ຜູ້ຮັບ", { exact: true }).fill(accounts[1]);
   await page
-    .getByLabel("OFL amount", { exact: true })
+    .getByLabel("ຈຳນວນ OFL", { exact: true })
     .fill("12.000000000000000001");
   await page
-    .getByLabel("Purpose", { exact: true })
+    .getByLabel("ຈຸດປະສົງ", { exact: true })
     .fill("Public books purchase");
-  await page.getByRole("button", { name: /Submit proposal/ }).click();
-  await expect(page.getByText("Confirmed", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Proposals", exact: true }).click();
+  await page.getByRole("button", { name: /ສົ່ງຂໍ້ສະເໜີ/ }).click();
+  await expect(page.getByText("ຢືນຢັນສຳເລັດ", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "ຂໍ້ສະເໜີ", exact: true }).click();
   await page
     .getByRole("link")
     .filter({ hasText: "Public books purchase" })
     .click();
-  await page.getByRole("button", { name: "Approve", exact: true }).click();
-  await expect(page.getByText("EXECUTABLE", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Execute", exact: true }).click();
-  await expect(page.getByText("EXECUTED", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Reports", exact: true }).click();
-  await page.getByLabel(/Report title/).fill("Public books receipt");
+  await page.getByRole("button", { name: "ອະນຸມັດ", exact: true }).click();
+  await expect(page.getByText("ພ້ອມດຳເນີນການ", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "ດຳເນີນການ", exact: true }).click();
+  await expect(page.getByText("ດຳເນີນການແລ້ວ", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "ລາຍງານ", exact: true }).click();
+  await page.getByLabel(/ຫົວຂໍ້ລາຍງານ/).fill("Public books receipt");
   await page
-    .getByLabel(/Content IPFS URI/)
+    .getByLabel(/ລິ້ງ ຫຼືລະຫັດເອກະສານ IPFS/)
     .fill("https://example.invalid/test-only-public-report");
   await page
-    .getByLabel("keccak256 of exact document bytes", { exact: true })
+    .getByLabel("ລະຫັດຢືນຢັນເອກະສານ", { exact: true })
     .fill(keccak256(stringToHex("Public test document")));
-  await page.getByRole("button", { name: /Publish reference/ }).click();
+  await page.getByRole("button", { name: /ເຜີຍແຜ່ລາຍງານ/ }).click();
   await expect(
     page.getByRole("heading", { name: "Public books receipt", exact: true }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Manage fund", exact: true }).click();
+  await page.getByRole("link", { name: "ຈັດການກອງທຶນ", exact: true }).click();
   await page
-    .getByLabel("Closed action type", { exact: true })
+    .getByLabel("ສິ່ງທີ່ຕ້ອງການສະເໜີ", { exact: true })
     .selectOption("7");
   await page
-    .getByLabel("Purpose", { exact: true })
+    .getByLabel("ຈຸດປະສົງ", { exact: true })
     .fill("Completed education project");
-  await page.getByRole("button", { name: /Submit proposal/ }).click();
-  await expect(page.getByText("Confirmed", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Proposals", exact: true }).click();
+  await page.getByRole("button", { name: /ສົ່ງຂໍ້ສະເໜີ/ }).click();
+  await expect(page.getByText("ຢືນຢັນສຳເລັດ", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "ຂໍ້ສະເໜີ", exact: true }).click();
   await page
     .getByRole("link")
     .filter({ hasText: "Completed education project" })
     .click();
-  await page.getByRole("button", { name: "Approve", exact: true }).click();
-  await expect(page.getByText("TIMELOCKED", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "ອະນຸມັດ", exact: true }).click();
+  await expect(page.getByText("ລໍຖ້າຄົບກຳນົດ", { exact: true })).toBeVisible();
   await client.request({
     method: "evm_increaseTime",
     params: [86400],
   } as never);
   await client.request({ method: "evm_mine", params: [] } as never);
   await page.reload();
-  await expect(page.getByText("EXECUTABLE", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Execute", exact: true }).click();
-  await expect(page.getByText("CLOSING", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Manage fund", exact: true }).click();
+  await expect(page.getByText("ພ້ອມດຳເນີນການ", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "ດຳເນີນການ", exact: true }).click();
+  await expect(page.getByText("ກຳລັງປິດ", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "ຈັດການກອງທຶນ", exact: true }).click();
   await page
     .getByRole("button", {
-      name: "Finalize immutable closed archive",
+      name: "ປິດກອງທຶນຖາວອນ",
       exact: true,
     })
     .click();
-  await expect(page.getByText("CLOSED", { exact: true })).toBeVisible();
+  await expect(page.getByText("ປິດແລ້ວ", { exact: true })).toBeVisible();
   expect(
     await client.readContract({
       address: d.openFundAddress,
@@ -346,9 +348,11 @@ test("browser self-claims an expired targeted refund without approvals", async (
   await client.request({ method: "evm_mine", params: [] } as never);
   await harness(page);
   await page.goto(`/e2e.html#/funds/local-v1/${id}`);
-  await expect(page.getByText("REFUNDABLE", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Claim refund", exact: true }).click();
-  await expect(page.getByText("Confirmed", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("ສາມາດຮັບເງິນຄືນ", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "ຮັບເງິນຄືນ", exact: true }).click();
+  await expect(page.getByText("ຢືນຢັນສຳເລັດ", { exact: true })).toBeVisible();
   expect(
     await client.readContract({
       address: d.openFundAddress,

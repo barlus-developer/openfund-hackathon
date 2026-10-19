@@ -55,43 +55,39 @@ describe("permissions derive from contract role responses", () => {
     state.approvers = [];
     state.manager = "0x2222222222222222222222222222222222222222";
     show();
-    expect(
-      screen.getByRole("button", { name: /Submit proposal/ }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: /ສົ່ງຂໍ້ສະເໜີ/ })).toBeDisabled();
   });
   it("offers existing-threshold recovery to a current approver", () => {
     state.approvers = [state.address];
     show();
+    expect(screen.getByRole("button", { name: /ສົ່ງຂໍ້ສະເໜີ/ })).toBeEnabled();
     expect(
-      screen.getByRole("button", { name: /Submit proposal/ }),
-    ).toBeEnabled();
-    expect(
-      screen.getByRole("combobox", { name: "Closed action type" }),
+      screen.getByRole("combobox", { name: "ສິ່ງທີ່ຕ້ອງການສະເໜີ" }),
     ).toHaveValue("1");
     expect(
-      screen.queryByRole("option", { name: "PAYOUT" }),
+      screen.queryByRole("option", { name: "ຈ່າຍເງິນ" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("option", { name: "CHANGE_MANAGER" }),
+      screen.getByRole("option", { name: "ປ່ຽນຜູ້ຈັດການ" }),
     ).toBeInTheDocument();
   });
   it("enables the manager action engine without recipient-policy shortcuts", () => {
     state.approvers = [];
     state.manager = state.address;
     show();
-    expect(screen.getByRole("option", { name: "PAYOUT" })).toBeInTheDocument();
     expect(
-      screen.queryByRole("option", { name: "ADD_RECIPIENT" }),
+      screen.getByRole("option", { name: "ຈ່າຍເງິນ" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "ເພີ່ມຜູ້ຮັບ" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Update presentation URI" }),
+      screen.getByRole("button", { name: "ບັນທຶກລິ້ງຂໍ້ມູນ" }),
     ).toBeEnabled();
     fireEvent.change(
-      screen.getByRole("combobox", { name: "Closed action type" }),
+      screen.getByRole("combobox", { name: "ສິ່ງທີ່ຕ້ອງການສະເໜີ" }),
       { target: { value: "7" } },
     );
-    expect(
-      screen.getByText(/Starting closure permanently halts/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/ການເລີ່ມປິດຈະຢຸດ/)).toBeInTheDocument();
   });
 });

@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/errors";
 import { stored, remember, forget } from "@/lib/storage";
 import { useState, useEffect } from "react";
 import { useConnection } from "wagmi";
@@ -24,7 +25,7 @@ export function CreateFund() {
   return defaultDeployment ? (
     <Wizard />
   ) : (
-    <EmptyState description="Deploy the official local contracts before creating a fund." />
+    <EmptyState description="ລະບົບຍັງບໍ່ພ້ອມສ້າງກອງທຶນ. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ." />
   );
 }
 function Wizard() {
@@ -98,7 +99,7 @@ function Wizard() {
         .find((e) => e?.eventName === "FundCreated");
       if (!created || created.eventName !== "FundCreated")
         throw Error(
-          "Successful receipt has no FundCreated event. Inspect the receipt before retrying.",
+          "ຍັງບໍ່ພົບຫຼັກຖານການສ້າງກອງທຶນ. ກະລຸນາກວດໃບຢືນຢັນກ່ອນລອງໃໝ່.",
         );
       forget("ofl-draft-v1");
       navigate(fundPath(d, created.args.fundId));
@@ -118,24 +119,25 @@ function Wizard() {
   return (
     <div className="form-container stack">
       <div>
-        <div className="eyebrow">NEW COMMUNITY FUND</div>
+        <div className="eyebrow"> ສ້າງກອງທຶນໃຫ້ອົງກອນ ແລະມູນນິທິ </div>
         <h1>{t("create")}</h1>
         <p>
-          One transaction creates a fund ID inside the official immutable
-          protocol.
+          {" "}
+          ບອກພາລະກິດຂອງອົງກອນ ກຳນົດເປົ້າໝາຍ ແລະເລືອກຜູ້ຮ່ວມອະນຸມັດ.
+          ຂໍ້ມູນຮ່າງຈະຖືກບັນທຶກໄວ້ໃນອຸປະກອນນີ້.{" "}
         </p>
       </div>
       <SelectField
-        label="Official network / version"
+        label="ເຄືອຂ່າຍທີ່ໃຊ້ສ້າງກອງທຶນ"
         value={version}
         onChange={setVersion}
         options={deployments.map((d) => [
           d.version,
-          `${d.name} · ${d.version}`,
+          `${d.chainId === 31337 ? "ເຄືອຂ່າຍທົດລອງ" : d.chainId} · ${d.version}`,
         ])}
       />
       <div className="stepper">
-        {["Identity", "Funding", "Governance", "Recipients", "Review"].map(
+        {["ຂໍ້ມູນ", "ລະດົມທຶນ", "ການອະນຸມັດ", "ຜູ້ຮັບ", "ກວດສອບ"].map(
           (s, i) => (
             <div className={i === step ? "step active" : "step"} key={s}>
               {i + 1}. {s}
@@ -146,11 +148,11 @@ function Wizard() {
       <Panel
         title={
           [
-            "1 · ຂໍ້ມູນກອງທຶນ / Identity",
-            "2 · ການລະດົມທຶນ / Funding",
-            "3 · ການອະນຸມັດ / Governance",
-            "4 · ຜູ້ຮັບ / Recipients",
-            "5 · ກວດສອບ / Review",
+            "1 · ຂໍ້ມູນກອງທຶນ",
+            "2 · ການລະດົມທຶນ",
+            "3 · ການອະນຸມັດ",
+            "4 · ຜູ້ຮັບ",
+            "5 · ກວດສອບ",
           ][step]
         }
       >
@@ -160,11 +162,16 @@ function Wizard() {
               {input(
                 "title",
                 t("title"),
-                "Maximum 120 UTF-8 bytes; Lao characters use multiple bytes.",
+                "ຕັ້ງຊື່ໃຫ້ສັ້ນ ແລະຈື່ງ່າຍ. ພາສາລາວປະມານ 40 ຕົວອັກສອນ (ບໍ່ເກີນ 120 ໄບຕ໌).",
               )}
-              {input("summary", t("summary"), "Maximum 600 UTF-8 bytes.", true)}
-              {input("category", "ໝວດໝູ່ / Category")}
-              {input("location", "ສະຖານທີ່ / Location (descriptive only)")}
+              {input(
+                "summary",
+                t("summary"),
+                "ອະທິບາຍວ່າເຈົ້າຢາກຊ່ວຍໃຜ ແລະຈະນຳໃຊ້ເງິນແນວໃດ (ບໍ່ເກີນ 600 ໄບຕ໌).",
+                true,
+              )}
+              {input("category", "ໝວດໝູ່")}
+              {input("location", "ສະຖານທີ່ (ຖ້າມີ)")}
               {input("manager", t("manager"))}
               <Button
                 variant="outline"
@@ -173,69 +180,68 @@ function Wizard() {
                 }
                 disabled={!connection.address}
               >
-                Use connected wallet
+                {" "}
+                ໃຊ້ກະເປົາທີ່ເຊື່ອມຢູ່{" "}
               </Button>
               {input(
                 "terms",
-                "ເງື່ອນໄຂຖາວອນ / Immutable purpose and terms",
-                "Hashed with location as UTF-8 using keccak256. Keep an independent copy.",
+                "ຈຸດປະສົງ ແລະເງື່ອນໄຂຖາວອນ",
+                "ເງື່ອນໄຂນີ້ຈະປ່ຽນບໍ່ໄດ້ຫຼັງສ້າງກອງທຶນ. ກະລຸນາເກັບສຳເນົາໄວ້ນຳ.",
                 true,
               )}
-              {input("termsURI", "Immutable terms URI (optional)")}
-              {input(
-                "metadataURI",
-                "Presentation metadata IPFS URI (optional)",
-              )}
-              <Notice title="Public & permanent">{t("privacy")}</Notice>
+              {input("termsURI", "ລິ້ງເອກະສານເງື່ອນໄຂ (ຖ້າມີ)")}
+              {input("metadataURI", "ລິ້ງຂໍ້ມູນເພີ່ມເຕີມ (ຖ້າມີ)")}
+              <Notice title="ຂໍ້ມູນສາທາລະນະຖາວອນ">{t("privacy")}</Notice>
             </>
           ) : null}
           {step === 1 ? (
             <>
               <SelectField
-                label="ຮູບແບບ / Funding mode"
+                label="ຮູບແບບການລະດົມທຶນ"
                 value={draft.mode}
                 onChange={change("mode")}
                 options={[
-                  ["0", "TARGETED · ມີເປົ້າໝາຍ"],
-                  ["1", "CONTINUOUS · ຕໍ່ເນື່ອງ"],
+                  ["0", "ລະດົມທຶນຕາມເປົ້າໝາຍ"],
+                  ["1", "ຮັບສະໜັບສະໜູນຕໍ່ເນື່ອງ"],
                 ]}
               />
               {draft.mode === "0" ? (
                 <>
                   {input("goal", t("goal") + " (OFL)")}
-                  {input("days", "ໄລຍະເວລາ / Duration (1–365 days)")}
+                  {input("days", "ໄລຍະເວລາ (1–365 ວັນ)")}
                   <SelectField
-                    label="ຖ້າບໍ່ເຖິງເປົ້າໝາຍ / Failure policy"
+                    label="ຖ້າບໍ່ເຖິງເປົ້າໝາຍ"
                     value={draft.policy}
                     onChange={change("policy")}
                     options={[
-                      ["", "Choose explicitly…"],
-                      ["0", "REFUND · ຄືນເງິນ"],
-                      ["1", "KEEP_FUNDS · ເກັບເງິນໄວ້"],
+                      ["", "ເລືອກເງື່ອນໄຂ…"],
+                      ["0", "ຄືນເງິນໃຫ້ຜູ້ສະໜັບສະໜູນ"],
+                      ["1", "ເກັບເງິນໄວ້ດຳເນີນງານ"],
                     ]}
                   />
                   <small>
-                    Estimated UTC deadline:{" "}
+                    {" "}
+                    ວັນສິ້ນສຸດໂດຍປະມານ:{" "}
                     {Number.isFinite(+draft.days)
                       ? new Date(
                           previewTime +
                             Math.min(365, Math.max(0, +draft.days)) * 86400000,
-                        ).toUTCString()
-                      : "—"}
-                    . The creation block sets the actual deadline.
+                        ).toLocaleString("lo-LA", { timeZoneName: "short" })
+                      : "—"}{" "}
+                    . ວັນທີຈິງຈະຖືກກຳນົດເມື່ອສ້າງກອງທຶນສຳເລັດ.{" "}
                   </small>
                   <Notice>
                     {draft.policy === "0"
                       ? t("refundPolicy")
                       : draft.policy === "1"
                         ? t("keepPolicy")
-                        : "The failure policy is immutable."}
+                        : "ເງື່ອນໄຂນີ້ປ່ຽນບໍ່ໄດ້ຫຼັງສ້າງກອງທຶນ."}
                   </Notice>
                 </>
               ) : (
                 <Notice>
-                  {t("continuousPolicy")} Goal, deadline and failure policy are
-                  canonicalized to zero / neutral.
+                  {t("continuousPolicy")} ຮູບແບບນີ້ບໍ່ກຳນົດເປົ້າໝາຍ
+                  ຫຼືວັນສິ້ນສຸດ.{" "}
                 </Notice>
               )}
             </>
@@ -244,76 +250,79 @@ function Wizard() {
             <>
               {input(
                 "approvers",
-                "ກະເປົາຜູ້ອະນຸມັດ / Approvers (one per line)",
-                "1–10 unique nonzero wallets.",
+                "ທີ່ຢູ່ກະເປົາຜູ້ອະນຸມັດ (ໜຶ່ງຄົນຕໍ່ແຖວ)",
+                "ເລືອກຜູ້ຮ່ວມອະນຸມັດ 1–10 ຄົນ ໂດຍໃຊ້ທີ່ຢູ່ກະເປົາທີ່ບໍ່ຊ້ຳກັນ.",
                 true,
               )}
-              {input("threshold", "ຈຳນວນອະນຸມັດ / Required approvals")}
-              {input("minimum", "ຂັ້ນຕ່ຳຖາວອນ / Immutable minimum threshold")}
+              {input("threshold", "ຈຳນວນຄົນທີ່ຕ້ອງອະນຸມັດ")}
+              {input("minimum", "ຈຳນວນຄົນອະນຸມັດຂັ້ນຕ່ຳຖາວອນ")}
               <Notice
                 title={
                   draft.threshold === "1"
-                    ? "Single-signature risk"
-                    : "Suggested social-fund setup: 2 of 3"
+                    ? "ການອະນຸມັດໂດຍຄົນດຽວ"
+                    : "ແນະນຳໃຫ້ມີຜູ້ອະນຸມັດ 3 ຄົນ ແລະຕ້ອງອະນຸມັດຢ່າງໜ້ອຍ 2 ຄົນ"
                 }
               >
-                Submission is separate from approval. Sensitive changes wait 24
-                hours. Lost keys may lock funds forever if the original
-                threshold cannot be reached. There is no platform recovery
-                override.
+                {" "}
+                ການສະເໜີຍັງບໍ່ແມ່ນການອະນຸມັດ. ການປ່ຽນແປງສຳຄັນຕ້ອງລໍຖ້າ 24
+                ຊົ່ວໂມງ. ຖ້າເສຍສິດເຂົ້າກະເປົາຈົນອະນຸມັດບໍ່ຄົບ
+                ເງິນອາດຖືກລັອກຖາວອນ ແລະບໍ່ມີຜູ້ດູແລທີ່ກູ້ຄືນໃຫ້ໄດ້.{" "}
               </Notice>
             </>
           ) : null}
           {step === 3 ? (
             <>
               <SelectField
-                label="ນະໂຍບາຍຜູ້ຮັບ / Immutable recipient policy"
+                label="ເງື່ອນໄຂຜູ້ຮັບເງິນ (ປ່ຽນບໍ່ໄດ້)"
                 value={draft.recipientPolicy}
                 onChange={change("recipientPolicy")}
                 options={[
-                  ["0", "OPEN · Governance may choose any eligible recipient"],
-                  ["1", "ALLOWLIST · Governance must maintain an allowlist"],
+                  ["0", "ເລືອກຜູ້ຮັບທີ່ມີສິດໄດ້ຕາມການອະນຸມັດ"],
+                  ["1", "ຈ່າຍໄດ້ສະເພາະຜູ້ຮັບໃນລາຍຊື່ທີ່ອະນຸມັດ"],
                 ]}
               />
               {draft.recipientPolicy === "1"
                 ? input(
                     "recipients",
-                    "Initial allowed recipients",
-                    "One wallet per line. Can be empty; future additions require approval and timelock.",
+                    "ລາຍຊື່ຜູ້ຮັບເບື້ອງຕົ້ນ",
+                    "ໜຶ່ງກະເປົາຕໍ່ແຖວ. ສາມາດເວັ້ນວ່າງໄວ້ໄດ້; ການເພີ່ມພາຍຫຼັງຕ້ອງຜ່ານການອະນຸມັດ ແລະລໍຖ້າຕາມກຳນົດ.",
                     true,
                   )
                 : null}
               <Notice>
-                Only approved proposals can spend. Allowlist mode can never
-                become OPEN. No fund-to-fund transfers in v1.
+                {" "}
+                ທຸກການຈ່າຍເງິນຕ້ອງຜ່ານການອະນຸມັດ. ຖ້າເລືອກຈຳກັດລາຍຊື່
+                ຈະປ່ຽນເປັນແບບບໍ່ຈຳກັດບໍ່ໄດ້.
+                ຍັງບໍ່ຮອງຮັບການໂອນລະຫວ່າງກອງທຶນ.{" "}
               </Notice>
             </>
           ) : null}
           {step === 4 ? (
             <>
-              <Notice title="Immutable financial rules">
-                Goal, duration, failure policy, minimum threshold, recipient
-                mode and terms hash cannot be edited later.
+              <Notice title="ເງື່ອນໄຂການເງິນຖາວອນ">
+                {" "}
+                ເປົ້າໝາຍ ໄລຍະເວລາ ນະໂຍບາຍຄືນເງິນ ຈຳນວນອະນຸມັດຂັ້ນຕ່ຳ
+                ແລະເງື່ອນໄຂຜູ້ຮັບ ປ່ຽນບໍ່ໄດ້ພາຍຫຼັງ.{" "}
               </Notice>
               {review ? (
                 <dl className="data-list">
-                  <dt>Title / manager</dt>
+                  <dt> ຊື່ກອງທຶນ / ຜູ້ຈັດການ </dt>
                   <dd>
                     {draft.title}
                     <code className="hash">{review[0].manager}</code>
                   </dd>
-                  <dt>Funding</dt>
+                  <dt> ລະດົມທຶນ </dt>
                   <dd>
                     {draft.mode === "0"
-                      ? `${draft.goal} OFL · ${draft.days} days · ${draft.policy === "0" ? "REFUND" : "KEEP_FUNDS"}`
-                      : "Continuous · No automatic refund"}
+                      ? `${draft.goal} OFL · ${draft.days} ວັນ · ${draft.policy === "0" ? "ຄືນເງິນ" : "ເກັບເງິນໄວ້"}`
+                      : "ຕໍ່ເນື່ອງ · ບໍ່ມີການຄືນເງິນອັດຕະໂນມັດ"}
                   </dd>
-                  <dt>Governance</dt>
+                  <dt> ການອະນຸມັດ </dt>
                   <dd>
-                    {draft.threshold}/{review[1].length}; minimum{" "}
+                    {draft.threshold}/{review[1].length} ; ຂັ້ນຕ່ຳ{" "}
                     {draft.minimum}
                   </dd>
-                  <dt>Approvers</dt>
+                  <dt> ຜູ້ອະນຸມັດ </dt>
                   <dd>
                     {review[1].map((a) => (
                       <code className="hash" key={a}>
@@ -321,31 +330,31 @@ function Wizard() {
                       </code>
                     ))}
                   </dd>
-                  <dt>Recipients</dt>
+                  <dt> ຜູ້ຮັບ </dt>
                   <dd>
                     {draft.recipientPolicy === "0"
-                      ? "OPEN"
-                      : review[2].join("\n") || "Empty allowlist"}
+                      ? "ເລືອກຜູ້ຮັບໄດ້ຕາມການອະນຸມັດ"
+                      : review[2].join("\n") || "ຍັງບໍ່ມີລາຍຊື່ຜູ້ຮັບ"}
                   </dd>
-                  <dt>Terms hash</dt>
+                  <dt> ລະຫັດຢືນຢັນເງື່ອນໄຂ </dt>
                   <dd>
                     <code>{review[0].termsHash}</code>
                     <p>{draft.terms}</p>
                   </dd>
-                  <dt>Official identity</dt>
+                  <dt> ຂໍ້ມູນອ້າງອີງກອງທຶນ </dt>
                   <dd>
                     {d.chainId} / {d.version}
                     <code className="hash">{d.openFundAddress}</code>
                   </dd>
                 </dl>
               ) : (
-                <Notice title="Validation required">
+                <Notice title="ກະລຸນາກວດສອບຂໍ້ມູນ">
                   {(() => {
                     try {
                       creationArgs(draft);
                       return "";
                     } catch (e) {
-                      return String(e);
+                      return friendlyError(e);
                     }
                   })()}
                 </Notice>

@@ -4,6 +4,7 @@ import { encodeFunctionData, getAddress, zeroAddress, zeroHash } from "viem";
 import { useFundContext } from "@/features/funds/FundLayout";
 import { useTransaction } from "@/hooks/useTransaction";
 import { openFundAbi } from "@/web3/generated/OpenFund";
+import { actionLabels } from "@/app/labels";
 import { actionNames } from "@/web3/reads";
 import { clientFor } from "@/web3/deployments";
 import { amount, ofl } from "@/lib/amount";
@@ -117,26 +118,39 @@ export function Manage() {
   return (
     <div className="detail-grid">
       <div className="stack">
-        <Panel title="Propose an on-chain action">
+        <Panel title="ສະເໜີການດຳເນີນງານ">
           <FieldGroup>
             <Connect chainId={d.chainId} />
             {!manager && !approver ? (
-              <Notice title="Read-only permissions">
-                Connect the current manager wallet to propose actions, or an
-                approver wallet to propose governance recovery.
+              <Notice title="ສິດເບິ່ງຂໍ້ມູນ">
+                {" "}
+                ເຊື່ອມກະເປົາຜູ້ຈັດການເພື່ອສະເໜີການດຳເນີນງານ
+                ຫຼືກະເປົາຜູ້ອະນຸມັດເພື່ອປັບຜູ້ຮັບຜິດຊອບ.{" "}
               </Notice>
             ) : null}
             <SelectField
-              label="Closed action type"
+              label="ສິ່ງທີ່ຕ້ອງການສະເໜີ"
               value={selectedKind}
               onChange={setKind}
               options={
-                options.length ? options : [["0", "PAYOUT (manager only)"]]
+                options.length
+                  ? options.map(
+                      ([value]) =>
+                        [value, actionLabels[Number(value)]] as [
+                          string,
+                          string,
+                        ],
+                    )
+                  : [["0", "ຈ່າຍເງິນ (ສຳລັບຜູ້ຈັດການ)"]]
               }
             />
             {![4, 7].includes(+selectedKind) ? (
               <TextField
-                label={+selectedKind === 0 ? t("recipient") : "Target wallet"}
+                label={
+                  +selectedKind === 0
+                    ? t("recipient")
+                    : "ທີ່ຢູ່ກະເປົາທີ່ກ່ຽວຂ້ອງ"
+                }
                 value={target}
                 onChange={setTarget}
               />
@@ -146,7 +160,7 @@ export function Manage() {
             ) : null}
             {+selectedKind === 4 ? (
               <TextField
-                label="New threshold"
+                label="ຈຳນວນອະນຸມັດໃໝ່"
                 value={value}
                 onChange={setValue}
               />
@@ -158,31 +172,32 @@ export function Manage() {
               multiline
             />
             <TextField
-              label="Evidence IPFS URI (optional)"
+              label="ລິ້ງຫຼັກຖານ (ຖ້າມີ)"
               value={uri}
               onChange={setURI}
             />
             <TextField
-              label="Evidence keccak256 hash (optional)"
+              label="ລະຫັດຢືນຢັນຫຼັກຖານ (ຖ້າມີ)"
               value={hash}
               onChange={setHash}
             />
-            <Notice title="Exact effects preview">
-              {actionNames[+selectedKind]} · Target {target || "none"} ·{" "}
-              {sum || "0"} OFL · New threshold {value || "—"}
+            <Notice title="ກວດສອບກ່ອນສົ່ງ">
+              {actionLabels[+selectedKind]} · ກະເປົາ {target || "ບໍ່ມີ"} ·{" "}
+              {sum || "0"} OFL · ຈຳນວນອະນຸມັດໃໝ່ {value || "—"}
               <p>
-                Latest balance {ofl(row.fund.balance)} OFL. Quorum{" "}
-                {row.fund.threshold}/{row.approvers.length}. Governance version{" "}
+                {" "}
+                ຍອດຄົງເຫຼືອລ່າສຸດ {ofl(row.fund.balance)} OFL. ຈຳນວນອະນຸມັດ{" "}
+                {row.fund.threshold}/{row.approvers.length} . ການອະນຸມັດຮຸ່ນ{" "}
                 {row.fund.governanceVersion.toString()}.{" "}
                 {+selectedKind === 0
-                  ? "No balance is reserved."
-                  : "24-hour timelock after final approval."}
+                  ? "ການສະເໜີບໍ່ໄດ້ຈອງຍອດເງິນໄວ້."
+                  : "ລໍຖ້າ 24 ຊົ່ວໂມງຫຼັງອະນຸມັດຄົບ."}
               </p>
               {+selectedKind === 7 ? (
                 <p>
-                  Starting closure permanently halts donations and invalidates
-                  existing proposals. Settlement still requires separate
-                  approved payouts.
+                  {" "}
+                  ການເລີ່ມປິດຈະຢຸດຮັບສະໜັບສະໜູນຖາວອນ ແລະຍົກເລີກຂໍ້ສະເໜີເດີມ.
+                  ການຈ່າຍເງິນທີ່ເຫຼືອຕ້ອງອະນຸມັດຕ່າງຫາກ.{" "}
                 </p>
               ) : null}
             </Notice>
@@ -197,7 +212,8 @@ export function Manage() {
               }
               onClick={propose}
             >
-              ສ້າງຂໍ້ສະເໜີ / Submit proposal
+              {" "}
+              ສົ່ງຂໍ້ສະເໜີ{" "}
             </Button>
             <TxFeedback state={tx.state} d={d} />
           </FieldGroup>
@@ -205,10 +221,10 @@ export function Manage() {
         <ClosureFinalize />
       </div>
       <div className="stack">
-        <Panel title="Presentation metadata (manager only)">
+        <Panel title="ອັບເດດຂໍ້ມູນ (ສຳລັບຜູ້ຈັດການ)">
           <FieldGroup>
             <TextField
-              label="Metadata URI"
+              label="ລິ້ງຂໍ້ມູນເພີ່ມເຕີມ"
               value={metadata}
               onChange={setMetadata}
             />
@@ -230,19 +246,20 @@ export function Manage() {
                 )
               }
             >
-              Update presentation URI
+              {" "}
+              ບັນທຶກລິ້ງຂໍ້ມູນ{" "}
             </Button>
             <small>
-              Funding rules, summary, purpose terms and financial rights remain
-              immutable. A zero content hash means this metadata update has no
-              byte-integrity commitment.
+              {" "}
+              ການອັບເດດລິ້ງບໍ່ປ່ຽນເງື່ອນໄຂການເງິນ ຫຼືຈຸດປະສົງ.
+              ລິ້ງທີ່ບໍ່ມີລະຫັດຢືນຢັນໄຟລ໌ຈະກວດການປ່ຽນແປງເນື້ອຫາບໍ່ໄດ້.{" "}
             </small>
           </FieldGroup>
         </Panel>
-        <Notice title="No direct withdrawal">
-          Managers propose. Approvers vote. Anyone executes after the contract’s
-          checks. There is no manager payout shortcut, platform recovery key, or
-          treasury sweep.
+        <Notice title="ການຈ່າຍເງິນຕ້ອງຜ່ານການອະນຸມັດ">
+          {" "}
+          ຜູ້ຈັດການສະເໜີ ຜູ້ອະນຸມັດຮ່ວມຕັດສິນໃຈ ແລ້ວຈຶ່ງດຳເນີນການໄດ້.
+          ບໍ່ມີຜູ້ໃດສາມາດຖອນເງິນໂດຍຂ້າມເງື່ອນໄຂ.{" "}
         </Notice>
       </div>
     </div>

@@ -41,7 +41,7 @@ describe("transaction lifecycle", () => {
     expect(stages).not.toContain("Confirmed");
   });
   it("explains rejected requests and goal races", () => {
-    expect(friendlyError(Error("4001 denied"))).toMatch(/rejected/i);
-    expect(friendlyError(Error("InvalidDonation"))).toMatch(/deadline/i);
+    expect(friendlyError(Error("4001 denied"))).toMatch(/ຍົກເລີກຄຳຂໍ/);
+    expect(friendlyError(Error("InvalidDonation"))).toMatch(/ວັນສິ້ນສຸດ/);
   });
 });

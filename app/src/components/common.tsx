@@ -15,13 +15,14 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { NativeSelect, NativeSelectOption } from "./ui/native-select";
 import { buttonVariants } from "./ui/button";
+import { transactionLabels } from "@/app/labels";
 import { useLanguage } from "@/app/i18n";
 import { friendlyError } from "@/lib/errors";
 import type { TxState } from "@/web3/transaction";
 import type { Deployment } from "@/web3/deployments";
 export function Notice({
   children,
-  title = "Please review",
+  title = "ກະລຸນາອ່ານກ່ອນດຳເນີນການ",
 }: {
   children: ReactNode;
   title?: string;
@@ -36,7 +37,7 @@ export function Notice({
 export function ErrorNotice({ error }: { error: unknown }) {
   return error ? (
     <Alert variant="destructive">
-      <AlertTitle>RPC / transaction error</AlertTitle>
+      <AlertTitle> ບໍ່ສາມາດດຳເນີນການໄດ້ </AlertTitle>
       <AlertDescription>{friendlyError(error)}</AlertDescription>
     </Alert>
   ) : null;
@@ -58,7 +59,7 @@ export function EmptyState({ description }: { description?: string }) {
       <EmptyHeader>
         <EmptyTitle>{t("empty")}</EmptyTitle>
         <EmptyDescription>
-          {description || "Load more records, refresh, or try another filter."}
+          {description || "ລອງໂຫຼດເພີ່ມ ໂຫຼດໃໝ່ ຫຼືປ່ຽນຕົວເລືອກການຄົ້ນຫາ."}
         </EmptyDescription>
       </EmptyHeader>
     </Empty>
@@ -192,12 +193,14 @@ export function TxHash({ hash, d }: { hash: string; d: Deployment }) {
 export function TxFeedback({ state, d }: { state: TxState; d: Deployment }) {
   return state.stage ? (
     <div className="flex flex-col gap-3" aria-live="polite">
-      <Notice title={state.stage}>
+      <Notice title={transactionLabels[state.stage] ?? "ສະຖານະລາຍການ"}>
         {state.stage === "Confirmed"
-          ? "Confirmed in a successful on-chain receipt."
+          ? "ລາຍການຂອງເຈົ້າຖືກຢືນຢັນສຳເລັດແລ້ວ."
           : state.error ||
-            "Follow the request in MetaMask. A submitted hash is not a confirmation."}
-        {state.gas ? <p>Estimated gas units: {state.gas.toString()}</p> : null}
+            "ກະລຸນາເບິ່ງຄຳຂໍໃນ MetaMask ແລະລໍຖ້າລະບົບຢືນຢັນສຳເລັດ."}
+        {state.gas ? (
+          <p> ຄ່າປະເມີນການໃຊ້ເຄືອຂ່າຍ: {state.gas.toString()}</p>
+        ) : null}
         {state.hash ? <TxHash hash={state.hash} d={d} /> : null}
       </Notice>
     </div>

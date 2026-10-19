@@ -44,11 +44,11 @@ export function Donate() {
     setReceipt("");
     try {
       const n = amount(input);
-      if (!accepts) throw Error("Fund no longer accepts donations.");
+      if (!accepts) throw Error("ກອງທຶນນີ້ຢຸດຮັບສະໜັບສະໜູນແລ້ວ.");
       if (row.fund.config.fundingMode === 0 && n > remaining)
-        throw Error("Amount exceeds the exact remaining goal.");
+        throw Error("ຈຳນວນນີ້ເກີນຍອດທີ່ກອງທຶນຍັງຕ້ອງການ.");
       if (balances.data && n > balances.data.ofl)
-        throw Error("Insufficient OFL balance.");
+        throw Error("ຍອດ OFL ໃນກະເປົາບໍ່ພຽງພໍ.");
       const r = await tx.send(
         d.oflTokenAddress,
         encodeFunctionData({
@@ -75,10 +75,10 @@ export function Donate() {
         event.args.fundId !== row.id
       )
         throw Error(
-          "Expected DonationReceived event is missing. Inspect receipt.",
+          "ຍັງບໍ່ພົບຫຼັກຖານການສະໜັບສະໜູນ. ກະລຸນາກວດໃບຢືນຢັນກ່ອນລອງໃໝ່.",
         );
       setReceipt(
-        `${ofl(event.args.amount)} OFL · Fund #${event.args.fundId} · Donor ${event.args.donor}`,
+        `${ofl(event.args.amount)} OFL · ກອງທຶນ #${event.args.fundId} · ຜູ້ສະໜັບສະໜູນ ${event.args.donor}`,
       );
     } catch (e) {
       setError(e);
@@ -88,11 +88,11 @@ export function Donate() {
     <div className="detail-grid">
       <Panel
         title={t("donate")}
-        description="OFL transferAndCall · one on-chain transaction"
+        description="ສະໜັບສະໜູນ OFL ໂດຍຢືນຢັນພຽງຄັ້ງດຽວ"
       >
         <FieldGroup>
           <Connect chainId={d.chainId} />
-          <Notice title="Your immutable donation terms">
+          <Notice title="ເງື່ອນໄຂການສະໜັບສະໜູນຂອງເຈົ້າ">
             <Policy row={row} />
           </Notice>
           <TextField label={t("amount")} value={input} onChange={setInput} />
@@ -107,12 +107,14 @@ export function Donate() {
                 variant="outline"
                 onClick={() => setInput(ofl(remaining))}
               >
-                Exact remaining: {ofl(remaining)}
+                {" "}
+                ຍອດທີ່ຍັງຕ້ອງການ: {ofl(remaining)}
               </Button>
             ) : null}
           </div>
           <p>
-            Wallet: {ofl(balances.data?.ofl)} OFL · Native gas:{" "}
+            {" "}
+            ຍອດໃນກະເປົາ: {ofl(balances.data?.ofl)} OFL · ຍອດສຳລັບຄ່າທຳນຽມ:{" "}
             {balances.data
               ? formatUnits(
                   balances.data.native,
@@ -121,15 +123,20 @@ export function Donate() {
               : "—"}{" "}
             {chainFor(d).nativeCurrency.symbol}
           </p>
-          <small>
-            Fund #{row.id.toString()} · {d.version} · chain {d.chainId}
-            <code className="hash">{d.openFundAddress}</code>Official OFL token
-            <code className="hash">{d.oflTokenAddress}</code>
-          </small>
+          <details className="advanced-filters">
+            <summary>ເບິ່ງຂໍ້ມູນອ້າງອີງການໂອນ</summary>{" "}
+            <small>
+              {" "}
+              ກອງທຶນ # {row.id.toString()} · {d.version} · ເຄືອຂ່າຍ {d.chainId}
+              <code className="hash">{d.openFundAddress}</code> ທີ່ຢູ່ OFL
+              ຂອງລະບົບ <code className="hash">{d.oflTokenAddress}</code>
+            </small>
+          </details>
           <ErrorNotice error={error || balances.error} />
           {!accepts ? (
-            <Notice title="Donations stopped">
-              The latest on-chain lifecycle does not accept deposits.
+            <Notice title="ຢຸດຮັບສະໜັບສະໜູນແລ້ວ">
+              {" "}
+              ກອງທຶນນີ້ບໍ່ສາມາດຮັບສະໜັບສະໜູນເພີ່ມໄດ້ໃນຂະນະນີ້.{" "}
             </Notice>
           ) : null}
           <Button
@@ -145,23 +152,27 @@ export function Donate() {
             {t("donate")} {parsed ? `${ofl(parsed)} OFL` : ""} · MetaMask
           </Button>
           <TxFeedback state={tx.state} d={d} />
-          {receipt ? <Notice title="Donation receipt">{receipt}</Notice> : null}
+          {receipt ? (
+            <Notice title="ໃບຢືນຢັນການສະໜັບສະໜູນ">{receipt}</Notice>
+          ) : null}
         </FieldGroup>
       </Panel>
       <div className="stack">
-        <Panel title="Before you confirm">
+        <Panel title="ກ່ອນຢືນຢັນການສະໜັບສະໜູນ">
           <p>
-            No prior approve transaction is needed. The fund ID is encoded in
-            the donation; a failed goal, deadline or state check reverts the
-            entire transfer.
+            {" "}
+            ບໍ່ຕ້ອງອະນຸມັດການໃຊ້ OFL ແຍກຕ່າງຫາກ.
+            ຖ້າກອງທຶນບໍ່ສາມາດຮັບສະໜັບສະໜູນໄດ້ ການໂອນຈະບໍ່ສຳເລັດ.{" "}
           </p>
           <p>
-            Wallet connection and network switching can involve separate
-            prompts. The donation itself is one chain transaction.
+            {" "}
+            MetaMask ອາດຂໍໃຫ້ເຊື່ອມກະເປົາ ຫຼືປ່ຽນເຄືອຂ່າຍກ່ອນ. ຫຼັງຈາກນັ້ນ
+            ຢືນຢັນການສະໜັບສະໜູນພຽງຄັ້ງດຽວ.{" "}
           </p>
           <p>
-            1 OFL ≈ 1 LAK is a target reference. DEMO OFL cannot be redeemed for
-            LAK.
+            {" "}
+            1 OFL ≈ 1 ກີບ ເປັນພຽງຄ່າອ້າງອີງ. OFL
+            ທົດລອງບໍ່ສາມາດແລກເປັນເງິນກີບໄດ້.{" "}
           </p>
         </Panel>
       </div>

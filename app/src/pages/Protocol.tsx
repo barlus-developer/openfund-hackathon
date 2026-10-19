@@ -3,91 +3,108 @@ import { Panel, Notice, EmptyState } from "@/components/common";
 export function Protocol() {
   return (
     <div className="stack prose">
-      <div className="eyebrow">CANONICAL IDENTITY</div>
-      <h1>Official deployments</h1>
-      <Notice>
-        Official membership means the configured chain ID + OpenFund address +
-        existing fund ID. Official membership does not verify a charity’s
-        identity.
+      <div className="page-title">
+        <div>
+          <div className="eyebrow">ຂໍ້ມູນອ້າງອີງຂອງລະບົບ</div>
+          <h1>ເຄືອຂ່າຍ OpenFund</h1>
+          <p>ກວດສອບເຄືອຂ່າຍ ແລະທີ່ຢູ່ຂອງລະບົບທີ່ກອງທຶນໃຊ້.</p>
+        </div>
+      </div>
+      <Notice title="ກວດສອບກ່ອນສະໜັບສະໜູນ">
+        ການມີກອງທຶນຢູ່ໃນ OpenFund ບໍ່ແມ່ນການຮັບຮອງຕົວຕົນຜູ້ສ້າງ
+        ຫຼືຜົນສຳເລັດຂອງໂຄງການ. ກະລຸນາອ່ານເງື່ອນໄຂ ແລະກວດສອບຂໍ້ມູນປະກອບ.
       </Notice>
       {deployments.length ? (
         deployments.map((d) => (
-          <Panel key={d.version} title={`${d.version} · ${d.name}`}>
+          <Panel
+            key={d.version}
+            title={
+              d.chainId === 31337
+                ? "ເຄືອຂ່າຍທົດລອງພາຍໃນ"
+                : `ເຄືອຂ່າຍ ${d.chainId}`
+            }
+            description={
+              d.version === defaultDeployment?.version
+                ? "ເຄືອຂ່າຍທີ່ກຳລັງໃຊ້"
+                : "ເຄືອຂ່າຍທີ່ຮອງຮັບ"
+            }
+          >
             <dl className="data-list">
-              <dt>Chain ID</dt>
-              <dd>{d.chainId}</dd>
-              <dt>OpenFund</dt>
-              <dd>
-                <code>{d.openFundAddress}</code>
-              </dd>
-              <dt>OFL</dt>
-              <dd>
-                <code>{d.oflTokenAddress}</code>
-              </dd>
-              <dt>Deployment block</dt>
-              <dd>
-                {d.deploymentBlock}
-                <code className="hash">{d.deploymentBlockHash}</code>
-              </dd>
-              <dt>RPC</dt>
-              <dd>{chainFor(d).rpcUrls.default.http.join(", ")}</dd>
-              <dt>Network</dt>
-              <dd>
-                {chainFor(d).testnet
-                  ? "Development / testnet"
-                  : "Public network"}{" "}
-                · Gas: {chainFor(d).nativeCurrency.symbol} ·{" "}
-                {d.confirmations ?? (d.chainId === 31337 ? 1 : 2)}{" "}
-                confirmation(s)
-                {d.version === defaultDeployment?.version
-                  ? " · Selected default"
-                  : ""}
-              </dd>
-              <dt>Mode</dt>
+              <dt>ຮຸ່ນຂອງລະບົບ</dt>
+              <dd>{d.version}</dd>
+              <dt>ຮູບແບບ</dt>
               <dd>
                 {d.demoMode
-                  ? "DEMO OFL / NOT FIAT-BACKED"
-                  : "Experimental protocol; verify deployment parameters"}
+                  ? "OFL ທົດລອງ · ບໍ່ມີເງິນກີບຄ້ຳປະກັນ"
+                  : "ລະບົບທົດລອງ · ກະລຸນາກວດສອບເງື່ອນໄຂ"}
               </dd>
-              <dt>Source verification</dt>
-              <dd>
-                {d.explorerUrl ? (
-                  <a
-                    href={`${d.explorerUrl}/address/${d.openFundAddress}#code`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Explorer source ↗ (check verification status)
-                  </a>
-                ) : (
-                  "Repository source: contracts/src/OpenFund.sol and OFLToken.sol. No public explorer verification claimed."
-                )}
-              </dd>
+              <dt>ຄ່າທຳນຽມໃຊ້</dt>
+              <dd>{chainFor(d).nativeCurrency.symbol}</dd>
+              <dt>ຈຳນວນການຢືນຢັນ</dt>
+              <dd>{d.confirmations ?? (d.chainId === 31337 ? 1 : 2)}</dd>
             </dl>
+            <details className="advanced-filters">
+              <summary>ເບິ່ງລາຍລະອຽດທາງເຕັກນິກ</summary>
+              <dl className="data-list mt-6">
+                <dt>ໝາຍເລກເຄືອຂ່າຍ</dt>
+                <dd>{d.chainId}</dd>
+                <dt>ທີ່ຢູ່ OpenFund</dt>
+                <dd>
+                  <code>{d.openFundAddress}</code>
+                </dd>
+                <dt>ທີ່ຢູ່ OFL</dt>
+                <dd>
+                  <code>{d.oflTokenAddress}</code>
+                </dd>
+                <dt>ບັນທຶກເລີ່ມຕົ້ນ</dt>
+                <dd>
+                  {d.deploymentBlock}
+                  <code className="hash">{d.deploymentBlockHash}</code>
+                </dd>
+                <dt>ຈຸດເຊື່ອມຕໍ່</dt>
+                <dd>
+                  <code>{chainFor(d).rpcUrls.default.http.join(", ")}</code>
+                </dd>
+              </dl>
+              {d.explorerUrl ? (
+                <a
+                  className="text-link"
+                  href={`${d.explorerUrl}/address/${d.openFundAddress}#code`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  ເບິ່ງລະຫັດໃນເວັບກວດສອບ ↗
+                </a>
+              ) : (
+                <p>
+                  ຍັງບໍ່ມີເວັບກວດສອບພາຍນອກ. ລະຫັດຕົ້ນສະບັບຢູ່ໃນ{" "}
+                  <code>contracts/src/OpenFund.sol</code> ແລະ{" "}
+                  <code>OFLToken.sol</code>.
+                </p>
+              )}
+            </details>
           </Panel>
         ))
       ) : (
-        <EmptyState description="No deployment yet. Run the local deployment script; addresses are never guessed." />
+        <EmptyState description="ລະບົບຍັງບໍ່ພ້ອມໃຊ້ງານ. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ." />
       )}
-      <Panel title="Immutable treasury, separate token issuer">
+      <Panel title="ກອງທຶນມີເງື່ອນໄຂຂອງຕົນເອງ">
         <p>
-          OpenFund has no owner, proxy, upgrade, generic call, admin sweep or
-          platform-controlled closure. Each version is a different contract
-          address; previous fund IDs and treasuries remain independent.
+          ເງິນຂອງແຕ່ລະກອງທຶນຖືກແຍກກັນ. ການຈ່າຍເງິນ
+          ຫຼືປິດກອງທຶນຕ້ອງຜ່ານການອະນຸມັດຕາມເງື່ອນໄຂ.
+          ບໍ່ມີຜູ້ດູແລລະບົບທີ່ສາມາດຖອນເງິນ ຫຼືປ່ຽນເງື່ອນໄຂແທນໄດ້.
         </p>
         <p>
-          The immutable token issuer may mint to unprotected wallets and append
-          protected protocol addresses. It cannot seize or burn holder or fund
-          balances. Registration requires contract code and a token/chain
-          handshake, but a malicious issuer can register a mimic and restrict
-          incoming transfers to that mimic.
-        </p>
-        <p>
-          OFL has 18 decimals. The 1 OFL ≈ 1 LAK reference is an economic
-          target, not proof of reserves, a market peg or redemption. Local OFL
-          is not fiat-backed.
+          ຜູ້ອອກ OFL ເປັນຄົນລະສ່ວນກັບກອງທຶນ. ຜູ້ອອກສາມາດເພີ່ມ OFL
+          ແລະລົງທະບຽນທີ່ຢູ່ລະບົບເພີ່ມໄດ້ ແຕ່ຍຶດ ຫຼືລຶບຍອດເງິນຂອງຜູ້ຖື
+          ຫຼືກອງທຶນບໍ່ໄດ້. ການລົງທະບຽນທີ່ຢູ່ປອມຍັງອາດສ້າງຄວາມສ່ຽງໄດ້
+          ຈຶ່ງຄວນກວດທີ່ຢູ່ກ່ອນໂອນ.
         </p>
       </Panel>
+      <Notice title="OFL ທົດລອງ">
+        OFL ມີທົດສະນິຍົມ 18 ຕຳແໜ່ງ. 1 OFL ≈ 1 ກີບ ເປັນພຽງຄ່າອ້າງອີງ
+        ບໍ່ແມ່ນການຮັບຮອງເງິນສຳຮອງ ຫຼືການແລກຄືນເປັນເງິນກີບ.
+      </Notice>
     </div>
   );
 }
