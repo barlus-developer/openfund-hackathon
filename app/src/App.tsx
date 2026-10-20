@@ -1,3 +1,4 @@
+import { Search, LayoutDashboard } from "lucide-react";
 import React, { lazy } from "react";
 import {
   HashRouter,
@@ -116,7 +117,9 @@ export function App({ walletConfig = config }: { walletConfig?: Config }) {
                       <EmptyState
                         description="ບໍ່ພົບໜ້ານີ້. ກະລຸນາໃຊ້ເມນູເພື່ອຄົ້ນຫາກອງທຶນ."
                         action={
-                          <ActionLink to="/funds">ຄົ້ນຫາກອງທຶນ</ActionLink>
+                          <ActionLink icon={Search} to="/funds">
+                            ຄົ້ນຫາກອງທຶນ
+                          </ActionLink>
                         }
                       />
                     }
@@ -171,7 +174,7 @@ export function App({ walletConfig = config }: { walletConfig?: Config }) {
                       <EmptyState
                         title="ບໍ່ພົບໜ້ານີ້"
                         action={
-                          <ActionLink to="/manager">
+                          <ActionLink icon={LayoutDashboard} to="/manager">
                             ກັບໄປ Funding Manager
                           </ActionLink>
                         }

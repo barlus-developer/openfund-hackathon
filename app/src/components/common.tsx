@@ -1,5 +1,12 @@
 import { Spinner } from "./ui/spinner";
-import { CheckCircle2, CircleAlert, FolderOpen, Info } from "lucide-react";
+import {
+  CheckCircle2,
+  CircleAlert,
+  FolderOpen,
+  Info,
+  ExternalLink,
+  type LucideIcon,
+} from "lucide-react";
 import { Disclosure } from "./patterns";
 import { useId, type ReactNode } from "react";
 import { Link } from "react-router-dom";
@@ -47,7 +54,7 @@ export function Notice({
 }
 export function ErrorNotice({ error }: { error: unknown }) {
   return error ? (
-    <Alert variant="destructive" role="alert">
+    <Alert variant="destructive" role="alert" className="feedback-enter">
       <CircleAlert aria-hidden="true" />
       <AlertTitle> ບໍ່ສາມາດດຳເນີນການໄດ້ </AlertTitle>
       <AlertDescription>{friendlyError(error)}</AlertDescription>
@@ -60,28 +67,35 @@ export function Loading({ cards = false }: { cards?: boolean }) {
     <div
       role="status"
       aria-live="polite"
-      className="flex min-w-0 flex-col gap-5"
+      className="feedback-enter flex min-w-0 flex-col gap-5"
     >
-      <p className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Spinner />
+      <p
+        className={
+          cards
+            ? "sr-only"
+            : "flex items-center gap-2 text-sm text-muted-foreground"
+        }
+      >
+        <Spinner aria-hidden="true" />
         {t("loading")}
       </p>
       {cards ? (
         <div
           aria-hidden="true"
-          className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid gap-6 md:grid-cols-2 xl:grid-cols-3"
         >
           {[0, 1, 2].map((i) => (
-            <Card key={i}>
+            <Card key={i} className="min-h-[26rem]">
               <CardHeader>
                 <Skeleton className="mb-4 size-11 rounded-xl" />
                 <Skeleton className="h-5 w-3/4" />
                 <Skeleton className="mt-3 h-3 w-full" />
                 <Skeleton className="mt-1 h-3 w-4/5" />
               </CardHeader>
-              <CardContent className="flex flex-col gap-3">
+              <CardContent className="mt-auto flex flex-col gap-3">
                 <Skeleton className="h-7 w-1/2" />
                 <Skeleton className="h-2 w-full" />
+                <Skeleton className="mt-6 h-11 w-full" />
               </CardContent>
             </Card>
           ))}
@@ -101,7 +115,7 @@ export function EmptyState({
 }) {
   const { t } = useLanguage();
   return (
-    <Empty>
+    <Empty className="feedback-enter">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <FolderOpen aria-hidden="true" />
@@ -203,10 +217,12 @@ export function SelectField({
   disabled,
   error,
   id: providedId,
+  icon,
 }: {
   label: string;
   value: string;
   onChange: (s: string) => void;
+  icon?: LucideIcon;
   options: readonly (readonly [string, string])[];
   disabled?: boolean;
   error?: string;
@@ -218,6 +234,7 @@ export function SelectField({
     <Field data-invalid={!!error} data-disabled={disabled}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <NativeSelect
+        icon={icon}
         id={id}
         disabled={disabled}
         aria-invalid={!!error}
@@ -239,10 +256,12 @@ export function ActionLink({
   to,
   children,
   outline = false,
+  icon: Icon,
 }: {
   to: string;
   children: ReactNode;
   outline?: boolean;
+  icon?: LucideIcon;
 }) {
   return (
     <Link
@@ -252,6 +271,7 @@ export function ActionLink({
       })}
       to={to}
     >
+      {Icon ? <Icon data-icon="inline-start" aria-hidden="true" /> : null}
       {children}
     </Link>
   );
@@ -264,7 +284,8 @@ export function TxHash({ hash, d }: { hash: string; d: Deployment }) {
       target="_blank"
       rel="noreferrer"
     >
-      {hash}
+      {hash} <ExternalLink className="inline-icon" aria-hidden="true" />
+      <span className="sr-only"> (ເປີດໃນແຖບໃໝ່)</span>
     </a>
   ) : (
     <code className="hash">{hash}</code>
@@ -289,24 +310,57 @@ export function TxFeedback({ state, d }: { state: TxState; d: Deployment }) {
           : failed
             ? "ລາຍການຍັງບໍ່ສຳເລັດ. ກວດສອບປະຫວັດກ່ອນລອງໃໝ່."
             : "ກຳລັງກວດສອບ ແລະລໍຖ້າການຢືນຢັນ.");
+  const step =
+    state.stage === "Preparing" ? 0 : state.stage === "Awaiting Wallet" ? 1 : 2;
+  const steps = ["ກວດສອບ", "ຢືນຢັນໃນກະເປົາ", "ຢືນຢັນເຄືອຂ່າຍ"];
   return (
-    <div aria-live="polite">
+    <div
+      className="tx-feedback feedback-enter"
+      data-state={failed ? "error" : pending ? "pending" : "success"}
+    >
       <Alert
         variant={failed ? "destructive" : "default"}
         role={failed ? "alert" : "status"}
+        aria-atomic="true"
       >
         {failed ? (
           <CircleAlert aria-hidden="true" />
         ) : pending ? (
-          <Spinner />
+          <Spinner aria-hidden="true" />
         ) : (
           <CheckCircle2 aria-hidden="true" />
         )}
         <AlertTitle>
-          {transactionLabels[state.stage] ?? "ສະຖານະລາຍການ"}
+          <span key={state.stage} className="state-label">
+            {transactionLabels[state.stage] ?? "ສະຖານະລາຍການ"}
+          </span>
         </AlertTitle>
         <AlertDescription>
           <p>{message}</p>
+          {pending || state.stage === "Confirmed" ? (
+            <ol className="transaction-steps" aria-label="ຂັ້ນຕອນລາຍການ">
+              {steps.map((label, index) => {
+                const done = state.stage === "Confirmed" || index < step;
+                return (
+                  <li
+                    key={label}
+                    data-complete={done}
+                    aria-current={
+                      pending && index === step ? "step" : undefined
+                    }
+                  >
+                    <span
+                      className="transaction-step-marker"
+                      aria-hidden="true"
+                    >
+                      {done ? <CheckCircle2 /> : index + 1}
+                    </span>
+                    <span>{label}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : null}
           {state.hash || state.gas ? (
             <Disclosure title="ລາຍລະອຽດລາຍການ">
               {state.gas ? (

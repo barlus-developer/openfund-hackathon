@@ -1,3 +1,14 @@
+import {
+  ListChecks,
+  Send,
+  Save,
+  UserRoundCog,
+  UserRoundPlus,
+  UserRoundMinus,
+  UserRoundCheck,
+  UserRoundX,
+  Archive,
+} from "lucide-react";
 import { Disclosure } from "@/components/patterns";
 import { useState } from "react";
 import { useConnection } from "wagmi";
@@ -23,6 +34,17 @@ import { Button } from "@/components/ui/button";
 import { Connect } from "@/features/wallet/Connect";
 import { ClosureFinalize } from "@/features/funds/FundOverview";
 import { useLanguage } from "@/app/i18n";
+const proposalIcons = [
+  Send,
+  UserRoundCog,
+  UserRoundPlus,
+  UserRoundMinus,
+  ListChecks,
+  UserRoundCheck,
+  UserRoundX,
+  Archive,
+] as const;
+
 export function Manage({ settingsOnly = false }: { settingsOnly?: boolean }) {
   const { d, row } = useFundContext(),
     c = useConnection(),
@@ -134,6 +156,7 @@ export function Manage({ settingsOnly = false }: { settingsOnly?: boolean }) {
               {manager || approver ? (
                 <>
                   <SelectField
+                    icon={proposalIcons[Number(selectedKind)] ?? ListChecks}
                     label="ສິ່ງທີ່ຕ້ອງການສະເໜີ"
                     value={selectedKind}
                     onChange={setKind}
@@ -247,7 +270,7 @@ export function Manage({ settingsOnly = false }: { settingsOnly?: boolean }) {
                 }
                 onClick={propose}
               >
-                {" "}
+                <Send data-icon="inline-start" aria-hidden="true" />{" "}
                 ສົ່ງຂໍ້ສະເໜີ{" "}
               </Button>
               <TxFeedback state={tx.state} d={d} />
@@ -289,7 +312,7 @@ export function Manage({ settingsOnly = false }: { settingsOnly?: boolean }) {
                   )
                 }
               >
-                {" "}
+                <Save data-icon="inline-start" aria-hidden="true" />{" "}
                 ບັນທຶກລິ້ງຂໍ້ມູນ{" "}
               </Button>
               <small>

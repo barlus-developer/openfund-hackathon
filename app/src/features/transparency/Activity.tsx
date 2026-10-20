@@ -1,4 +1,12 @@
-import { RefreshCw, ArrowDownLeft, ArrowUpRight, FileText } from "lucide-react";
+import {
+  ChevronRight,
+  ListPlus,
+  Square,
+  RefreshCw,
+  ArrowDownLeft,
+  ArrowUpRight,
+  FileText,
+} from "lucide-react";
 import { Disclosure, PageHeader } from "@/components/patterns";
 import { eventLabels } from "@/app/labels";
 import { useActivity } from "@/hooks/useActivity";
@@ -46,11 +54,13 @@ export function ScanControls({ q }: { q: ReturnType<typeof useActivity> }) {
               disabled={q.isFetching}
               onClick={() => q.fetchNextPage()}
             >
+              <ListPlus data-icon="inline-start" aria-hidden="true" />
               ໂຫຼດປະຫວັດເພີ່ມ
             </Button>
           ) : null}
           {q.isFetching ? (
             <Button variant="ghost" onClick={q.cancel}>
+              <Square data-icon="inline-start" aria-hidden="true" />
               ຢຸດການໂຫຼດ
             </Button>
           ) : null}
@@ -104,9 +114,10 @@ export function EventRow({ event, d }: { event: Event; d: Deployment }) {
                 ? managerFundPath(d, String(args.fundId))
                 : fundPath(d, String(args.fundId))
             }
-            className="inline-flex min-h-11 items-center self-start text-sm text-primary hover:underline"
+            className="inline-flex min-h-11 items-center gap-2 self-start text-sm text-primary hover:underline"
           >
-            ກອງທຶນ #{String(args.fundId)}
+            ກອງທຶນ #{String(args.fundId)}{" "}
+            <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
           </Link>
         ) : null}
         {args.title ? <p className="text-sm">{String(args.title)}</p> : null}
@@ -114,13 +125,14 @@ export function EventRow({ event, d }: { event: Event; d: Deployment }) {
         args.proposalId > 0n &&
         args.fundId !== undefined ? (
           <Link
-            className="inline-flex min-h-11 items-center self-start text-sm text-primary hover:underline"
+            className="inline-flex min-h-11 items-center gap-2 self-start text-sm text-primary hover:underline"
             to={
               managerFundPath(d, String(args.fundId)) +
               `/proposals/${String(args.proposalId)}`
             }
           >
-            ຂໍ້ສະເໜີ #{String(args.proposalId)} ↗
+            ຂໍ້ສະເໜີ #{String(args.proposalId)}{" "}
+            <ChevronRight className="inline-icon shrink-0" aria-hidden="true" />
           </Link>
         ) : null}
         <Disclosure title="ລາຍລະອຽດລາຍການ">

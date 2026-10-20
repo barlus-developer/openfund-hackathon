@@ -1,3 +1,4 @@
+import { HardDrive, Upload, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { keccak256, type Hex } from "viem";
 import { Button } from "@/components/ui/button";
@@ -97,6 +98,7 @@ export function IPFSUpload({
         />
       </Field>
       <SelectField
+        icon={HardDrive}
         label="ບ່ອນເກັບເອກະສານ"
         value={provider}
         onChange={(value) => {
@@ -144,11 +146,12 @@ export function IPFSUpload({
           }
           onClick={upload}
         >
+          <Upload data-icon="inline-start" aria-hidden="true" />
           {busy ? "ກຳລັງອັບໂຫຼດ…" : "ອັບໂຫຼດເອກະສານ"}
         </Button>
         {busy && (
           <Button variant="outline" onClick={() => request.current?.abort()}>
-            {" "}
+            <X data-icon="inline-start" aria-hidden="true" />{" "}
             ຍົກເລີກການອັບໂຫຼດ{" "}
           </Button>
         )}

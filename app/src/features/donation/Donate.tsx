@@ -25,6 +25,7 @@ import { Panel, Notice, ErrorNotice, TxFeedback } from "@/components/common";
 import { Policy } from "@/features/funds/FundCard";
 import { Connect } from "@/features/wallet/Connect";
 import { useLanguage } from "@/app/i18n";
+import { HandHeart, ArrowLeftRight, Target, CheckCircle2 } from "lucide-react";
 export function Donate() {
   const { d, row } = useFundContext(),
     c = useConnection(),
@@ -99,148 +100,185 @@ export function Donate() {
           : "";
   if (receipt)
     return (
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
+      <div className="donation-receipt feedback-enter mx-auto flex w-full max-w-xl flex-col gap-6">
+        <div className="success-seal" aria-hidden="true">
+          <CheckCircle2 />
+        </div>
         <h2
           ref={receiptTitle}
           tabIndex={-1}
-          className="text-2xl font-semibold outline-none"
+          className="text-center text-2xl font-semibold outline-none"
         >
           ຂອບໃຈທີ່ຮ່ວມສະໜັບສະໜູນ
         </h2>
         <Notice title="ໃບຢືນຢັນການສະໜັບສະໜູນ">{receipt}</Notice>
         <TxFeedback state={tx.state} d={d} />
         <ActionLink
+          icon={HandHeart}
           to={`/donations?deployment=${encodeURIComponent(d.version)}`}
         >
           ການສະໜັບສະໜູນຂອງຂ້ອຍ
         </ActionLink>
-        <ActionLink to={fundPath(d, row.id) + "/transactions"} outline>
+        <ActionLink
+          icon={ArrowLeftRight}
+          to={fundPath(d, row.id) + "/transactions"}
+          outline
+        >
           ຕິດຕາມການໃຊ້ເງິນ
         </ActionLink>
       </div>
     );
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
+    <div className="donation-flow mx-auto flex w-full max-w-xl flex-col gap-6">
       <Panel title={t("donate")}>
-        <FieldGroup>
-          <Field data-invalid={!!amountError}>
-            <FieldLabel htmlFor="donation-amount">{t("amount")}</FieldLabel>
-            <InputGroup>
-              <InputGroupInput
-                id="donation-amount"
-                inputMode="decimal"
-                placeholder="0"
-                value={input}
-                aria-invalid={!!amountError}
-                aria-describedby={amountError ? "amount-error" : undefined}
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (c.address && c.chainId === d.chainId && accepts && !amountError)
+              void donate();
+          }}
+        >
+          <FieldGroup>
+            <Field data-invalid={!!amountError}>
+              <FieldLabel htmlFor="donation-amount">{t("amount")}</FieldLabel>
+              <InputGroup className="donation-amount">
+                <InputGroupInput
+                  id="donation-amount"
+                  inputMode="decimal"
+                  placeholder="0"
+                  autoComplete="off"
+                  value={input}
+                  aria-invalid={!!amountError}
+                  aria-describedby={amountError ? "amount-error" : undefined}
+                  disabled={tx.busy}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    setError(undefined);
+                  }}
+                />
+                <InputGroupAddon align="inline-end">
+                  <InputGroupText>OFL</InputGroupText>
+                </InputGroupAddon>
+              </InputGroup>
+              {amountError ? (
+                <FieldError id="amount-error">{amountError}</FieldError>
+              ) : null}
+            </Field>
+            <ToggleGroup
+              aria-label="ເລືອກຈຳນວນສະໜັບສະໜູນ"
+              variant="outline"
+              disabled={tx.busy}
+              value={[input]}
+              onValueChange={(values) => {
+                if (values[0]) {
+                  setInput(values[0]);
+                  setError(undefined);
+                }
+              }}
+              className="donation-presets grid w-full grid-cols-3"
+            >
+              {["100", "500", "1000"].map((value) => (
+                <ToggleGroupItem
+                  key={value}
+                  value={value}
+                  disabled={
+                    tx.busy ||
+                    (!!balances.data && amount(value) > balances.data.ofl) ||
+                    (row.fund.config.fundingMode === 0 &&
+                      amount(value) > remaining)
+                  }
+                >
+                  {value} OFL
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+            {row.fund.config.fundingMode === 0 && remaining > 0n ? (
+              <Button
+                variant="ghost"
                 disabled={tx.busy}
-                onChange={(e) => {
-                  setInput(e.target.value);
+                onClick={() => {
+                  setInput(ofl(remaining));
                   setError(undefined);
                 }}
-              />
-              <InputGroupAddon align="inline-end">
-                <InputGroupText>OFL</InputGroupText>
-              </InputGroupAddon>
-            </InputGroup>
-            {amountError ? (
-              <FieldError id="amount-error">{amountError}</FieldError>
-            ) : null}
-          </Field>
-          <ToggleGroup
-            aria-label="ເລືອກຈຳນວນສະໜັບສະໜູນ"
-            variant="outline"
-            disabled={tx.busy}
-            value={[input]}
-            onValueChange={(values) => {
-              if (values[0]) setInput(values[0]);
-            }}
-            className="flex-wrap"
-          >
-            {["100", "500", "1000"].map((value) => (
-              <ToggleGroupItem
-                key={value}
-                value={value}
-                disabled={
-                  tx.busy ||
-                  (row.fund.config.fundingMode === 0 &&
-                    amount(value) > remaining)
-                }
               >
-                {value} OFL
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-          {row.fund.config.fundingMode === 0 && remaining > 0n ? (
-            <Button
-              variant="ghost"
-              disabled={tx.busy}
-              onClick={() => setInput(ofl(remaining))}
-            >
-              ຍອດທີ່ຍັງຕ້ອງການ: {formatOfl(remaining)} OFL
-            </Button>
-          ) : null}
-          {c.address ? (
-            <dl className="data-list text-sm">
-              <dt>ຍອດໃນກະເປົາ</dt>
-              <dd>{formatOfl(balances.data?.ofl)} OFL</dd>
-              <dt>ຍອດສຳລັບຄ່າທຳນຽມ</dt>
-              <dd>
-                {balances.data
-                  ? formatUnits(
-                      balances.data.native,
-                      chainFor(d).nativeCurrency.decimals,
-                    )
-                  : "—"}{" "}
-                {chainFor(d).nativeCurrency.symbol}
-              </dd>
-            </dl>
-          ) : null}
-          <Notice title="ເງື່ອນໄຂການສະໜັບສະໜູນ">
-            <Policy row={row} />
-          </Notice>
-          <p className="text-xs text-muted-foreground">
-            OFL ທົດລອງບໍ່ສາມາດແລກເປັນເງິນກີບໄດ້. ມີຄ່າທຳນຽມເຄືອຂ່າຍ; ກວດສອບຍອດ
-            ແລະຄ່າທຳນຽມໃນ MetaMask ກ່ອນຢືນຢັນ.
-          </p>
-          <ErrorNotice error={error || balances.error} />
-          {!accepts ? (
-            <Notice title="ຢຸດຮັບສະໜັບສະໜູນແລ້ວ">
-              ກອງທຶນນີ້ບໍ່ຮັບສະໜັບສະໜູນເພີ່ມ.
+                <Target data-icon="inline-start" aria-hidden="true" />
+                ຍອດທີ່ຍັງຕ້ອງການ: {formatOfl(remaining)} OFL
+              </Button>
+            ) : null}
+            {c.address ? (
+              <dl className="data-list text-sm">
+                <dt>ຍອດໃນກະເປົາ</dt>
+                <dd>{formatOfl(balances.data?.ofl)} OFL</dd>
+                <dt>ຍອດສຳລັບຄ່າທຳນຽມ</dt>
+                <dd>
+                  {balances.data
+                    ? formatUnits(
+                        balances.data.native,
+                        chainFor(d).nativeCurrency.decimals,
+                      )
+                    : "—"}{" "}
+                  {chainFor(d).nativeCurrency.symbol}
+                </dd>
+              </dl>
+            ) : null}
+            <Notice title="ເງື່ອນໄຂການສະໜັບສະໜູນ">
+              <Policy row={row} />
             </Notice>
-          ) : !c.address || c.chainId !== d.chainId ? (
-            <Connect chainId={d.chainId} />
-          ) : (
-            <Button
-              size="lg"
-              disabled={tx.busy || parsed === 0n || !!amountError}
-              onClick={donate}
-            >
-              {tx.busy ? <Spinner data-icon="inline-start" /> : null}
-              {tx.busy ? (
-                "ກຳລັງດຳເນີນການ…"
-              ) : (
-                <>
-                  {t("donate")} {parsed ? `${formatOfl(parsed)} OFL` : ""}
-                </>
-              )}
-            </Button>
-          )}
-          <TxFeedback state={tx.state} d={d} />
-          <Disclosure title="ຂໍ້ມູນອ້າງອີງການໂອນ">
-            <dl className="data-list">
-              <dt>ກອງທຶນ</dt>
-              <dd>
-                #{row.id.toString()} · {d.version} · {d.chainId}
-                <code className="hash">{d.openFundAddress}</code>
-              </dd>
-              <dt>OFL</dt>
-              <dd>
-                <code className="hash">{d.oflTokenAddress}</code>
-              </dd>
-            </dl>
-          </Disclosure>
-        </FieldGroup>
+            <p className="text-xs text-muted-foreground">
+              OFL ທົດລອງບໍ່ສາມາດແລກເປັນເງິນກີບໄດ້. ມີຄ່າທຳນຽມເຄືອຂ່າຍ; ກວດສອບຍອດ
+              ແລະຄ່າທຳນຽມໃນ MetaMask ກ່ອນຢືນຢັນ.
+            </p>
+            <ErrorNotice error={error || balances.error} />
+            {!accepts ? (
+              <Notice title="ຢຸດຮັບສະໜັບສະໜູນແລ້ວ">
+                ກອງທຶນນີ້ບໍ່ຮັບສະໜັບສະໜູນເພີ່ມ.
+              </Notice>
+            ) : !c.address || c.chainId !== d.chainId ? (
+              <Connect chainId={d.chainId} />
+            ) : (
+              <Button
+                size="lg"
+                type="submit"
+                className="w-full"
+                aria-busy={tx.busy}
+                disabled={tx.busy || parsed === 0n || !!amountError}
+              >
+                {tx.busy ? (
+                  <Spinner data-icon="inline-start" aria-hidden="true" />
+                ) : (
+                  <HandHeart data-icon="inline-start" aria-hidden="true" />
+                )}
+                {tx.busy ? (
+                  tx.state.stage === "Awaiting Wallet" ? (
+                    "ຢືນຢັນໃນ MetaMask…"
+                  ) : tx.state.stage === "Preparing" ? (
+                    "ກຳລັງກວດສອບ…"
+                  ) : (
+                    "ກຳລັງລໍຖ້າຢືນຢັນ…"
+                  )
+                ) : (
+                  <>
+                    {t("donate")} {parsed ? `${formatOfl(parsed)} OFL` : ""}
+                  </>
+                )}
+              </Button>
+            )}
+            <TxFeedback state={tx.state} d={d} />
+            <Disclosure title="ຂໍ້ມູນອ້າງອີງການໂອນ">
+              <dl className="data-list">
+                <dt>ກອງທຶນ</dt>
+                <dd>
+                  #{row.id.toString()} · {d.version} · {d.chainId}
+                  <code className="hash">{d.openFundAddress}</code>
+                </dd>
+                <dt>OFL</dt>
+                <dd>
+                  <code className="hash">{d.oflTokenAddress}</code>
+                </dd>
+              </dl>
+            </Disclosure>
+          </FieldGroup>
+        </form>
       </Panel>
     </div>
   );

@@ -1,6 +1,19 @@
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { Suspense, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useMatch } from "react-router-dom";
-import { HeartHandshake, Menu, ArrowUpRight } from "lucide-react";
+import {
+  HeartHandshake,
+  Menu,
+  Search,
+  HandHeart,
+  LayoutDashboard,
+  ArrowLeftRight,
+  CircleHelp,
+} from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Sheet,
@@ -12,10 +25,11 @@ import {
 import { RouteNavigation } from "@/components/patterns";
 import { defaultDeployment, resolveDeployment } from "@/web3/deployments";
 import { Loading } from "@/components/common";
+import { RouteSurface } from "@/components/motion";
 
 const navigation = [
-  { to: "/funds", label: "ຄົ້ນຫາກອງທຶນ" },
-  { to: "/donations", label: "ການສະໜັບສະໜູນຂອງຂ້ອຍ" },
+  { to: "/funds", icon: Search, label: "ຄົ້ນຫາກອງທຶນ" },
+  { to: "/donations", icon: HandHeart, label: "ການສະໜັບສະໜູນຂອງຂ້ອຍ" },
 ];
 export function Brand() {
   return (
@@ -86,23 +100,30 @@ export function Layout() {
               to="/manager"
               className={buttonVariants({ variant: "ghost" })}
             >
-              Funding Manager{" "}
-              <ArrowUpRight data-icon="inline-end" aria-hidden="true" />
+              <LayoutDashboard data-icon="inline-start" aria-hidden="true" />
+              Funding Manager
             </Link>
           </div>
           <Sheet open={menu} onOpenChange={setMenu}>
-            <SheetTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="lg:hidden"
-                  aria-label="ເປີດເມນູ"
-                />
-              }
-            >
-              <Menu />
-            </SheetTrigger>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <SheetTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="lg:hidden"
+                        aria-label="ເປີດເມນູ"
+                      />
+                    }
+                  >
+                    <Menu aria-hidden="true" />
+                  </SheetTrigger>
+                }
+              />
+              <TooltipContent>ເປີດເມນູ</TooltipContent>
+            </Tooltip>
             <SheetContent className="overflow-y-auto">
               <SheetHeader>
                 <SheetTitle>OpenFund</SheetTitle>
@@ -110,9 +131,17 @@ export function Layout() {
               <nav aria-label="ເມນູຫຼັກ" className="flex flex-col gap-2 px-4">
                 {[
                   ...navigation,
-                  { to: "/manager", label: "Funding Manager" },
-                  { to: "/transactions", label: "ປະຫວັດກອງທຶນ" },
-                ].map((item) => (
+                  {
+                    to: "/manager",
+                    icon: LayoutDashboard,
+                    label: "Funding Manager",
+                  },
+                  {
+                    to: "/transactions",
+                    icon: ArrowLeftRight,
+                    label: "ປະຫວັດກອງທຶນ",
+                  },
+                ].map(({ icon: Icon, ...item }) => (
                   <NavLink
                     key={item.to}
                     to={item.to}
@@ -123,6 +152,7 @@ export function Layout() {
                         "justify-start aria-[current=page]:bg-secondary aria-[current=page]:text-primary",
                     })}
                   >
+                    <Icon data-icon="inline-start" aria-hidden="true" />
                     {item.label}
                   </NavLink>
                 ))}
@@ -136,9 +166,11 @@ export function Layout() {
         tabIndex={-1}
         className="mx-auto flex min-h-[65vh] w-full max-w-6xl flex-col gap-8 px-5 py-8 outline-none sm:px-8 sm:py-12 lg:pb-20"
       >
-        <Suspense fallback={<Loading />}>
-          <Outlet />
-        </Suspense>
+        <RouteSurface>
+          <Suspense fallback={<Loading />}>
+            <Outlet />
+          </Suspense>
+        </RouteSurface>
       </main>
       <footer className="border-t">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-8 sm:px-8">
@@ -149,15 +181,28 @@ export function Layout() {
               className="flex flex-wrap gap-x-5 text-sm text-muted-foreground"
             >
               {[
-                ["/about", "ວິທີໃຊ້ ແລະເງື່ອນໄຂ"],
-                ["/transactions", "ປະຫວັດກອງທຶນ"],
-                ["/manager", "Funding Manager"],
-              ].map(([to, label]) => (
+                {
+                  to: "/about",
+                  label: "ວິທີໃຊ້ ແລະເງື່ອນໄຂ",
+                  icon: CircleHelp,
+                },
+                {
+                  to: "/transactions",
+                  label: "ປະຫວັດກອງທຶນ",
+                  icon: ArrowLeftRight,
+                },
+                {
+                  to: "/manager",
+                  label: "Funding Manager",
+                  icon: LayoutDashboard,
+                },
+              ].map(({ to, label, icon: Icon }) => (
                 <Link
                   key={to}
                   to={to}
-                  className="inline-flex min-h-11 items-center hover:text-primary"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg hover:text-primary focus-visible:outline-2 focus-visible:outline-ring"
                 >
+                  <Icon className="size-4 shrink-0" aria-hidden="true" />
                   {label}
                 </Link>
               ))}

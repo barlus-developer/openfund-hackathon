@@ -1,6 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { useConnection } from "wagmi";
-import { ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  RefreshCw,
+  LayoutDashboard,
+  Send,
+  ListChecks,
+  Users,
+  ArrowLeftRight,
+  Banknote,
+  FileText,
+  Settings,
+  HandHeart,
+} from "lucide-react";
 import { RouteNavigation } from "@/components/patterns";
 import {
   Link,
@@ -63,6 +75,7 @@ function LoadFund({
           disabled={q.isFetching}
           onClick={() => q.refetch()}
         >
+          <RefreshCw data-icon="inline-start" aria-hidden="true" />
           ລອງໂຫຼດໃໝ່
         </Button>
       </div>
@@ -76,20 +89,20 @@ function LoadFund({
   const donating = !manager && pathname === `${root}/donate`;
   const tabs = manager
     ? [
-        ["", "ພາບລວມ"],
-        ["spending", "ຈັດການກອງທຶນ"],
-        ["proposals", "ຂໍ້ສະເໜີ"],
-        ["governance", "ຜູ້ອະນຸມັດ"],
-        ["transactions", "ປະຫວັດ"],
-        ["payouts", "ການຈ່າຍເງິນ"],
-        ["reports", "ລາຍງານ"],
-        ["settings", "ຕັ້ງຄ່າ"],
+        { tab: "", label: "ພາບລວມ", icon: LayoutDashboard },
+        { tab: "spending", label: "ຈັດການກອງທຶນ", icon: Send },
+        { tab: "proposals", label: "ຂໍ້ສະເໜີ", icon: ListChecks },
+        { tab: "governance", label: "ຜູ້ອະນຸມັດ", icon: Users },
+        { tab: "transactions", label: "ປະຫວັດ", icon: ArrowLeftRight },
+        { tab: "payouts", label: "ການຈ່າຍເງິນ", icon: Banknote },
+        { tab: "reports", label: "ລາຍງານ", icon: FileText },
+        { tab: "settings", label: "ຕັ້ງຄ່າ", icon: Settings },
       ]
     : [
-        ["", t("overview")],
-        ["reports", t("reports")],
-        ["payouts", t("payouts")],
-        ["transactions", "ປະຫວັດ"],
+        { tab: "", label: t("overview"), icon: LayoutDashboard },
+        { tab: "reports", label: t("reports"), icon: FileText },
+        { tab: "payouts", label: t("payouts"), icon: Banknote },
+        { tab: "transactions", label: "ປະຫວັດ", icon: ArrowLeftRight },
       ];
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -128,23 +141,29 @@ function LoadFund({
               {manager ? (
                 <Link
                   to={fundPath(d, id)}
-                  className="inline-flex min-h-11 items-center text-primary hover:underline"
+                  className="inline-flex min-h-11 items-center gap-2 text-primary hover:underline"
                 >
-                  ເບິ່ງໜ້າສະໜັບສະໜູນ ↗
+                  <HandHeart className="size-4 shrink-0" aria-hidden="true" />
+                  ເບິ່ງໜ້າສະໜັບສະໜູນ
                 </Link>
               ) : team ? (
                 <Link
                   to={managerFundPath(d, id)}
-                  className="inline-flex min-h-11 items-center text-primary hover:underline"
+                  className="inline-flex min-h-11 items-center gap-2 text-primary hover:underline"
                 >
-                  ເປີດໃນ Funding Manager ↗
+                  <LayoutDashboard
+                    className="size-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                  ເປີດໃນ Funding Manager
                 </Link>
               ) : null}
             </div>
           ) : null}
           <RouteNavigation
             label={manager ? "ເມນູຈັດການກອງທຶນ" : "ເມນູກອງທຶນ"}
-            items={tabs.map(([tab, label]) => ({
+            items={tabs.map(({ tab, label, icon }) => ({
+              icon,
               to: root + (tab ? `/${tab}` : ""),
               label,
               end: !tab,

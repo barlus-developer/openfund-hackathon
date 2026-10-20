@@ -89,4 +89,41 @@ describe("wallet and feedback presentation", () => {
       screen.getByText(/no automatic refund entitlement/),
     ).toBeInTheDocument();
   });
+  it("marks network confirmation as current without claiming it is complete", () => {
+    render(
+      wrapper(
+        <TxFeedback state={{ stage: "Pending" }} d={defaultDeployment!} />,
+      ),
+    );
+    const steps = screen.getByRole("list", { name: "ຂັ້ນຕອນລາຍການ" });
+    expect(steps.children[0]).toHaveAttribute("data-complete", "true");
+    expect(steps.children[1]).toHaveAttribute("data-complete", "true");
+    expect(steps.children[2]).toHaveAttribute("aria-current", "step");
+    expect(steps.children[2]).toHaveAttribute("data-complete", "false");
+  });
+  it("only completes every step after confirmation", () => {
+    render(
+      wrapper(
+        <TxFeedback state={{ stage: "Confirmed" }} d={defaultDeployment!} />,
+      ),
+    );
+    const steps = screen.getByRole("list", { name: "ຂັ້ນຕອນລາຍການ" });
+    expect(
+      [...steps.children].every(
+        (step) => step.getAttribute("data-complete") === "true",
+      ),
+    ).toBe(true);
+    expect(steps.querySelector('[aria-current="step"]')).toBeNull();
+  });
+  it("shows a rejected transaction as an error without a completed timeline", () => {
+    render(
+      wrapper(
+        <TxFeedback state={{ stage: "Rejected" }} d={defaultDeployment!} />,
+      ),
+    );
+    expect(screen.getByRole("alert")).toBeVisible();
+    expect(
+      screen.queryByRole("list", { name: "ຂັ້ນຕອນລາຍການ" }),
+    ).not.toBeInTheDocument();
+  });
 });

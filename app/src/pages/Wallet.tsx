@@ -1,3 +1,4 @@
+import { ExternalLink, Copy, Send, Plus } from "lucide-react";
 import { Disclosure, PageHeader, Stat } from "@/components/patterns";
 import { useSearchParams } from "react-router-dom";
 import { useState } from "react";
@@ -121,6 +122,7 @@ function WalletContent({ d }: { d: Deployment }) {
                   }
                 }}
               >
+                <Copy data-icon="inline-start" aria-hidden="true" />
                 ສຳເນົາທີ່ຢູ່ຮັບເງິນ
               </Button>
             </div>
@@ -154,6 +156,7 @@ function WalletContent({ d }: { d: Deployment }) {
                 }
                 onClick={send}
               >
+                <Send data-icon="inline-start" aria-hidden="true" />
                 {tx.busy ? "ກຳລັງໂອນ…" : "ໂອນ OFL ຜ່ານ MetaMask"}
               </Button>
               <TxFeedback state={tx.state} d={d} />
@@ -181,16 +184,22 @@ function WalletContent({ d }: { d: Deployment }) {
                 }
               }}
             >
+              <Plus data-icon="inline-start" aria-hidden="true" />
               ເພີ່ມ OFL ໃນ MetaMask
             </Button>
             {d.explorerUrl ? (
               <a
-                className="inline-flex min-h-11 items-center text-sm text-primary hover:underline"
+                className="inline-flex min-h-11 items-center gap-2 text-sm text-primary hover:underline"
                 href={`${d.explorerUrl}/address/${c.address}`}
                 target="_blank"
                 rel="noreferrer"
               >
-                ເບິ່ງກະເປົາໃນເວັບກວດສອບ ↗
+                ເບິ່ງກະເປົາໃນເວັບກວດສອບ{" "}
+                <ExternalLink
+                  className="inline-icon shrink-0"
+                  aria-hidden="true"
+                />
+                <span className="sr-only"> (ເປີດໃນແຖບໃໝ່)</span>
               </a>
             ) : null}
           </Disclosure>

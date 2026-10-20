@@ -7,18 +7,28 @@ function Progress({
   className,
   children,
   value,
+  min = 0,
+  max = 100,
   ...props
 }: ProgressPrimitive.Root.Props) {
+  const scale =
+    value === null || max <= min
+      ? 0
+      : Math.min(1, Math.max(0, (value - min) / (max - min)));
   return (
     <ProgressPrimitive.Root
       value={value}
+      min={min}
+      max={max}
       data-slot="progress"
       className={cn("flex flex-wrap gap-3", className)}
       {...props}
     >
       {children}
       <ProgressTrack>
-        <ProgressIndicator />
+        <ProgressIndicator
+          style={{ width: "100%", transform: `scaleX(${scale})` }}
+        />
       </ProgressTrack>
     </ProgressPrimitive.Root>
   );
@@ -44,7 +54,10 @@ function ProgressIndicator({
   return (
     <ProgressPrimitive.Indicator
       data-slot="progress-indicator"
-      className={cn("h-full bg-primary transition-all", className)}
+      className={cn(
+        "progress-fill h-full origin-left rounded-full bg-primary",
+        className,
+      )}
       {...props}
     />
   );

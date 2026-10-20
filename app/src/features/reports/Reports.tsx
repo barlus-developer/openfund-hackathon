@@ -1,3 +1,4 @@
+import { ExternalLink, Send, ShieldCheck } from "lucide-react";
 import { Disclosure } from "@/components/patterns";
 import { Connect } from "@/features/wallet/Connect";
 import { useState } from "react";
@@ -131,7 +132,7 @@ export function Reports() {
               disabled={!manager || tx.busy || c.chainId !== d.chainId}
               onClick={publish}
             >
-              {" "}
+              <Send data-icon="inline-start" aria-hidden="true" />{" "}
               ເຜີຍແຜ່ລາຍງານ{" "}
             </Button>
             <TxFeedback state={tx.state} d={d} />
@@ -167,9 +168,16 @@ function ReportItem({ event, d }: { event: Activity; d: Deployment }) {
         {event.blockNumber.toString()}
       </p>
       {url ? (
-        <a href={url} target="_blank" rel="noreferrer">
+        <a
+          className="inline-flex min-h-11 items-center gap-2 self-start text-sm text-primary hover:underline"
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+        >
           {" "}
-          ເປີດເບິ່ງເອກະສານ ↗{" "}
+          ເປີດເບິ່ງເອກະສານ{" "}
+          <ExternalLink className="inline-icon shrink-0" aria-hidden="true" />
+          <span className="sr-only"> (ເປີດໃນແຖບໃໝ່)</span>{" "}
         </a>
       ) : (
         <code>{String(event.args.contentURI)}</code>
@@ -199,7 +207,7 @@ function ReportItem({ event, d }: { event: Activity; d: Deployment }) {
             }
           }}
         >
-          {" "}
+          <ShieldCheck data-icon="inline-start" aria-hidden="true" />{" "}
           {busy ? "ກຳລັງກວດສອບ…" : "ກວດສອບໄຟລ໌ເອກະສານ"}
         </Button>
         <small role="status">{result}</small>

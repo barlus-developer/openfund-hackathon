@@ -1,3 +1,4 @@
+import { ExternalLink } from "lucide-react";
 import { PageHeader } from "@/components/patterns";
 import { Disclosure } from "@/components/patterns";
 import { deployments, chainFor, defaultDeployment } from "@/web3/deployments";
@@ -65,12 +66,17 @@ export function Protocol() {
               </dl>
               {d.explorerUrl ? (
                 <a
-                  className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline [&_svg]:size-4"
+                  className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:underline [&_svg]:size-4"
                   href={`${d.explorerUrl}/address/${d.openFundAddress}#code`}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  ເບິ່ງລະຫັດໃນເວັບກວດສອບ ↗
+                  ເບິ່ງລະຫັດໃນເວັບກວດສອບ{" "}
+                  <ExternalLink
+                    className="inline-icon shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span className="sr-only"> (ເປີດໃນແຖບໃໝ່)</span>
                 </a>
               ) : (
                 <p className="text-sm text-muted-foreground">

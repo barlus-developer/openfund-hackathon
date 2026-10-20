@@ -1,3 +1,8 @@
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import * as React from "react";
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 import { cn } from "@/lib/utils";
@@ -123,18 +128,25 @@ function ToastClose({
   ...props
 }: ToastPrimitive.Close.Props) {
   return (
-    <ToastPrimitive.Close
-      data-slot="toast-close"
-      aria-label="ປິດການແຈ້ງເຕືອນ"
-      render={render}
-      className={cn(
-        "relative shrink-0 text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:text-foreground",
-        className,
-      )}
-      {...props}
-    >
-      {children ?? <XIcon aria-hidden="true" />}
-    </ToastPrimitive.Close>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <ToastPrimitive.Close
+            data-slot="toast-close"
+            aria-label="ປິດການແຈ້ງເຕືອນ"
+            render={render}
+            className={cn(
+              "relative shrink-0 text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:text-foreground",
+              className,
+            )}
+            {...props}
+          >
+            {children ?? <XIcon aria-hidden="true" />}
+          </ToastPrimitive.Close>
+        }
+      />
+      <TooltipContent>ປິດການແຈ້ງເຕືອນ</TooltipContent>
+    </Tooltip>
   );
 }
 

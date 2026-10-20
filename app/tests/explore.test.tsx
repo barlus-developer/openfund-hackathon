@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { Explore } from "../src/pages/Explore";
+import { Home } from "../src/pages/Home";
 
 vi.mock("../src/web3/reads", () => ({
   useFunds: () => ({
@@ -74,19 +75,35 @@ function show(path = "/funds") {
     </MemoryRouter>,
   );
 }
-describe("fund discovery for different funding purposes", () => {
-  it("applies category links from the home page", () => {
+describe("fund discovery", () => {
+  it("shows all funds even when an old category link is opened", () => {
     show("/funds?category=Business");
     expect(screen.getByText("ຮ້ານກາເຟ")).toBeVisible();
-    expect(screen.queryByText("ສວນຊຸມຊົນ")).not.toBeInTheDocument();
-  });
-  it("matches Lao category names to their existing contract categories", () => {
-    show("/funds?category=Projects");
+    expect(screen.getByText("ສວນຊຸມຊົນ")).toBeVisible();
     expect(screen.getByText("ໂຄງການສ້າງແອັບ")).toBeVisible();
-    expect(screen.queryByText("ຮ້ານກາເຟ")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("article")).toHaveLength(3);
+    expect(screen.queryByLabelText("ໝວດໝູ່")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "ລ້າງຕົວເລືອກການຄົ້ນຫາ" }),
+    ).not.toBeInTheDocument();
   });
-  it("combines search and category filters, then resets both", () => {
-    show("/funds?category=Business");
+  it("shows recent funds without category buttons on the home page", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <Home />
+      </MemoryRouter>,
+    );
+    expect(screen.getAllByRole("article")).toHaveLength(3);
+    expect(screen.queryByLabelText("ໝວດໝູ່ກອງທຶນ")).not.toBeInTheDocument();
+    expect(container.querySelector('a[href*="category="]')).toBeNull();
+  });
+  it("searches across all funds and resets the search", () => {
+    show();
+    fireEvent.change(screen.getByLabelText("ຄົ້ນຫາກອງທຶນ"), {
+      target: { value: "ສວນຊຸມຊົນ" },
+    });
+    expect(screen.getAllByRole("article")).toHaveLength(1);
+    expect(screen.getByRole("article")).toHaveTextContent("ສວນຊຸມຊົນ");
     fireEvent.change(screen.getByLabelText("ຄົ້ນຫາກອງທຶນ"), {
       target: { value: "ບໍ່ພົບ" },
     });

@@ -1,3 +1,15 @@
+import {
+  Network,
+  Target,
+  Infinity as InfinityIcon,
+  Undo2,
+  ShieldCheck,
+  Users,
+  Wallet,
+  ArrowLeft,
+  ArrowRight,
+  Plus,
+} from "lucide-react";
 import { PageHeader, ProgressSteps, Disclosure } from "@/components/patterns";
 import { ZodError } from "zod";
 import { friendlyError } from "@/lib/errors";
@@ -160,6 +172,7 @@ function Wizard() {
       />
       {deployments.length > 1 ? (
         <SelectField
+          icon={Network}
           label="ເຄືອຂ່າຍທີ່ໃຊ້ສ້າງກອງທຶນ"
           value={version}
           onChange={setVersion}
@@ -235,7 +248,7 @@ function Wizard() {
                   }
                   disabled={!connection.address}
                 >
-                  {" "}
+                  <Wallet data-icon="inline-start" aria-hidden="true" />{" "}
                   ໃຊ້ກະເປົາທີ່ເຊື່ອມຢູ່{" "}
                 </Button>
                 {input(
@@ -267,6 +280,7 @@ function Wizard() {
             {step === 1 ? (
               <>
                 <SelectField
+                  icon={draft.mode === "0" ? Target : InfinityIcon}
                   label="ຮູບແບບການລະດົມທຶນ"
                   value={draft.mode}
                   onChange={change("mode")}
@@ -280,6 +294,13 @@ function Wizard() {
                     {input("goal", t("goal") + " (OFL)")}
                     {input("days", "ໄລຍະເວລາ (1–365 ວັນ)")}
                     <SelectField
+                      icon={
+                        draft.policy === "0"
+                          ? Undo2
+                          : draft.policy === "1"
+                            ? Wallet
+                            : ShieldCheck
+                      }
                       label="ຖ້າບໍ່ເຖິງເປົ້າໝາຍ"
                       id="fund-policy"
                       error={fields.policy}
@@ -346,6 +367,7 @@ function Wizard() {
             {step === 3 ? (
               <>
                 <SelectField
+                  icon={Users}
                   label="ເງື່ອນໄຂຜູ້ຮັບເງິນ (ປ່ຽນບໍ່ໄດ້)"
                   value={draft.recipientPolicy}
                   onChange={change("recipientPolicy")}
@@ -438,10 +460,14 @@ function Wizard() {
               setStep((v) => v - 1);
             }}
           >
+            <ArrowLeft data-icon="inline-start" aria-hidden="true" />
             {t("back")}
           </Button>
           {step < 4 ? (
-            <Button onClick={next}>{t("next")}</Button>
+            <Button onClick={next}>
+              {t("next")}
+              <ArrowRight data-icon="inline-end" aria-hidden="true" />
+            </Button>
           ) : (
             <Button
               onClick={submit}
@@ -452,6 +478,7 @@ function Wizard() {
                 connection.chainId !== d.chainId
               }
             >
+              <Plus data-icon="inline-start" aria-hidden="true" />
               {t("create")} · MetaMask
             </Button>
           )}

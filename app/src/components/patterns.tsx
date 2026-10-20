@@ -13,6 +13,7 @@ import {
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
 import { Progress } from "@/components/ui/progress";
+import type { LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export function PageHeader({
@@ -72,16 +73,25 @@ export function Disclosure({
   title,
   children,
   defaultOpen = false,
+  icon: Icon,
 }: {
   title: ReactNode;
   children: ReactNode;
   defaultOpen?: boolean;
+  icon?: LucideIcon;
 }) {
   const [initialValue] = useState(() => (defaultOpen ? ["details"] : []));
   return (
     <Accordion defaultValue={initialValue}>
       <AccordionItem value="details">
-        <AccordionTrigger>{title}</AccordionTrigger>
+        <AccordionTrigger>
+          <span className="flex min-w-0 items-center gap-2">
+            {Icon ? (
+              <Icon className="size-4 shrink-0" aria-hidden="true" />
+            ) : null}
+            <span>{title}</span>
+          </span>
+        </AccordionTrigger>
         <AccordionContent>
           <div className="flex min-w-0 flex-col gap-4 pt-3">{children}</div>
         </AccordionContent>
@@ -90,7 +100,12 @@ export function Disclosure({
   );
 }
 
-export type RouteItem = { to: string; label: string; end?: boolean };
+export type RouteItem = {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  end?: boolean;
+};
 export function RouteNavigation({
   items,
   label,
@@ -105,7 +120,7 @@ export function RouteNavigation({
     <div className="max-w-full min-w-0 py-1">
       <NavigationMenu aria-label={label} className="max-w-none justify-start">
         <NavigationMenuList className="flex-wrap justify-start gap-1">
-          {items.map((item) => {
+          {items.map(({ icon: Icon, ...item }) => {
             const target = item.to.split("?")[0];
             return (
               <NavigationMenuItem key={item.to}>
@@ -118,6 +133,7 @@ export function RouteNavigation({
                   render={<Link to={item.to} onClick={onNavigate} />}
                   className="min-h-11 whitespace-nowrap px-3 py-3"
                 >
+                  <Icon aria-hidden="true" />
                   {item.label}
                 </NavigationMenuLink>
               </NavigationMenuItem>

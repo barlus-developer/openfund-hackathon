@@ -1,3 +1,13 @@
+import {
+  Network,
+  HandHeart,
+  ChevronRight,
+  ListPlus,
+  RefreshCw,
+  Plus,
+  Search,
+  Undo2,
+} from "lucide-react";
 import { PageHeader, RouteNavigation, Stat } from "@/components/patterns";
 import { actionLabels, proposalStatusLabels } from "@/app/labels";
 import { useState } from "react";
@@ -79,11 +89,13 @@ export function Dashboard({
             {
               to: `/donations?deployment=${encodeURIComponent(d.version)}`,
               label: "ການສະໜັບສະໜູນ",
+              icon: HandHeart,
               end: true,
             },
             {
               to: `/donations/refunds?deployment=${encodeURIComponent(d.version)}`,
               label: "ຮັບເງິນຄືນ",
+              icon: Undo2,
             },
           ]}
         />
@@ -91,6 +103,7 @@ export function Dashboard({
       {deployments.length > 1 ? (
         <div className="max-w-sm">
           <SelectField
+            icon={Network}
             label="ເຄືອຂ່າຍກອງທຶນ"
             value={d.version}
             onChange={(value) => setParams({ deployment: value })}
@@ -204,8 +217,8 @@ function WalletDashboard({
         transactions.length,
       ) > limit ? (
         <Button variant="outline" onClick={() => setLimit((n) => n + 12)}>
-          {" "}
-          ໂຫຼດເພີ່ມ 12 ລາຍການ{" "}
+          <ListPlus data-icon="inline-start" aria-hidden="true" /> ໂຫຼດເພີ່ມ 12
+          ລາຍການ{" "}
         </Button>
       ) : null}
       {section === "overview" && !funds.error && !q.error ? (
@@ -256,6 +269,7 @@ function WalletDashboard({
           disabled={funds.isFetching}
           onClick={() => funds.refetch()}
         >
+          <RefreshCw data-icon="inline-start" aria-hidden="true" />
           ລອງໂຫຼດກອງທຶນໃໝ່
         </Button>
       ) : null}
@@ -280,6 +294,7 @@ function WalletDashboard({
               title="ຍັງບໍ່ມີກອງທຶນຂອງເຈົ້າ"
               action={
                 <ActionLink
+                  icon={Plus}
                   to={`/manager/create?deployment=${encodeURIComponent(d.version)}`}
                   outline
                 >
@@ -327,7 +342,11 @@ function WalletDashboard({
           ) : (
             <EmptyState
               title="ຍັງບໍ່ມີການສະໜັບສະໜູນ"
-              action={<ActionLink to="/funds">ຄົ້ນຫາກອງທຶນ</ActionLink>}
+              action={
+                <ActionLink icon={Search} to="/funds">
+                  ຄົ້ນຫາກອງທຶນ
+                </ActionLink>
+              }
             />
           )}
         </section>
@@ -384,7 +403,7 @@ function ApprovalTasks({ d, ids }: { d: Deployment; ids: bigint[] }) {
       {pending.map(({ id, data: [p, status] }) => (
         <Link
           key={String(id)}
-          className="flex min-w-0 flex-col justify-between gap-4 border-b py-5 last:border-0 sm:flex-row"
+          className="group flex min-w-0 flex-col justify-between gap-4 rounded-lg border-b py-5 last:border-0 hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-ring sm:flex-row sm:items-center"
           to={managerFundPath(d, p.fundId) + `/proposals/${id}`}
         >
           <div>
@@ -393,9 +412,15 @@ function ApprovalTasks({ d, ids }: { d: Deployment; ids: bigint[] }) {
             </strong>
             <p className="text-sm text-muted-foreground">{p.action.purpose}</p>
           </div>
-          <Badge variant="outline">
-            {proposalStatusLabels[status]} · {p.approvals} ການອະນຸມັດ
-          </Badge>
+          <span className="flex shrink-0 items-center gap-3">
+            <Badge variant="outline">
+              {proposalStatusLabels[status]} · {p.approvals} ການອະນຸມັດ
+            </Badge>
+            <ChevronRight
+              className="size-4 shrink-0 text-muted-foreground group-hover:text-primary"
+              aria-hidden="true"
+            />
+          </span>
         </Link>
       ))}
       {!pending.length && results.every((q) => q.isSuccess) ? (
@@ -436,7 +461,14 @@ function RefundTask({
       <p className="text-sm leading-7 text-muted-foreground">
         {" "}
         ກອງທຶນ # {id.toString()} : ບໍ່ມີຍອດທີ່ຮັບຄືນໄດ້ໃນຂະນະນີ້.{" "}
-        <Link to={fundPath(d, id)}> ເບິ່ງເງື່ອນໄຂກອງທຶນ ↗ </Link>
+        <Link to={fundPath(d, id)}>
+          {" "}
+          ເບິ່ງເງື່ອນໄຂກອງທຶນ{" "}
+          <ChevronRight
+            className="inline-icon shrink-0"
+            aria-hidden="true"
+          />{" "}
+        </Link>
       </p>
     );
   return (
@@ -464,6 +496,7 @@ function RefundTask({
           )
         }
       >
+        <Undo2 data-icon="inline-start" aria-hidden="true" />
         {t("refund")}
       </Button>
     </div>

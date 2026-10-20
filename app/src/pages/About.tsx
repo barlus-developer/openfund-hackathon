@@ -1,5 +1,5 @@
 import { PageHeader, Disclosure } from "@/components/patterns";
-import { ArrowRight } from "lucide-react";
+import { Search } from "lucide-react";
 import { ActionLink } from "@/components/common";
 const steps = [
   ["ເລືອກກອງທຶນ", "ເບິ່ງຈຸດປະສົງ ເປົ້າໝາຍ ແລະເງື່ອນໄຂຄືນເງິນ."],
@@ -29,8 +29,8 @@ export function About() {
           </li>
         ))}
       </ol>
-      <ActionLink to="/funds">
-        ຄົ້ນຫາກອງທຶນ <ArrowRight data-icon="inline-end" aria-hidden="true" />
+      <ActionLink icon={Search} to="/funds">
+        ຄົ້ນຫາກອງທຶນ
       </ActionLink>
       <section aria-labelledby="about-terms" className="flex flex-col gap-2">
         <h2 id="about-terms" className="mb-2 text-lg font-semibold">

@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+
 import * as React from "react";
 import { Dialog as SheetPrimitive } from "@base-ui/react/dialog";
 import { cn } from "@/lib/utils";
@@ -60,19 +66,27 @@ function SheetContent({
       >
         {children}
         {showCloseButton && (
-          <SheetPrimitive.Close
-            data-slot="sheet-close"
-            render={
-              <Button
-                variant="ghost"
-                className="absolute top-3 right-3"
-                size="icon-sm"
-              />
-            }
-          >
-            <XIcon />
-            <span className="sr-only">ປິດເມນູ</span>
-          </SheetPrimitive.Close>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <SheetPrimitive.Close
+                  data-slot="sheet-close"
+                  render={
+                    <Button
+                      variant="ghost"
+                      className="absolute top-3 right-3"
+                      size="icon-sm"
+                      aria-label="ປິດເມນູ"
+                    />
+                  }
+                >
+                  <XIcon aria-hidden="true" />
+                  <span className="sr-only">ປິດເມນູ</span>
+                </SheetPrimitive.Close>
+              }
+            />
+            <TooltipContent>ປິດເມນູ</TooltipContent>
+          </Tooltip>
         )}
       </SheetPrimitive.Popup>
     </SheetPortal>

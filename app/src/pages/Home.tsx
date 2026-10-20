@@ -1,8 +1,7 @@
 import { useState, type FormEvent } from "react";
 import {
+  RefreshCw,
   ArrowRight,
-  BookOpen,
-  HeartPulse,
   Users,
   Search,
   Eye,
@@ -21,12 +20,8 @@ import {
   InputGroupAddon,
 } from "@/components/ui/input-group";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { Reveal } from "@/components/motion";
 
-const categories = [
-  { icon: BookOpen, label: "ການສຶກສາ", value: "Education" },
-  { icon: HeartPulse, label: "ສຸຂະພາບ", value: "Healthcare" },
-  { icon: Users, label: "ຊຸມຊົນ", value: "Community" },
-];
 export function Home() {
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
@@ -39,7 +34,7 @@ export function Home() {
   return (
     <div className="home-page flex flex-col gap-8 sm:gap-12">
       <section className="grid items-center gap-8 py-4 sm:py-8 lg:grid-cols-[1.4fr_1fr] lg:gap-16">
-        <div className="flex flex-col items-start gap-6">
+        <div className="hero-copy flex flex-col items-start gap-6">
           <p className="eyebrow">
             <HandHeart className="size-4" aria-hidden="true" />
             ເລີ່ມຈາກຄວາມຫ່ວງໃຍ · ເຕີບໂຕດ້ວຍພະລັງຊຸມຊົນ
@@ -72,12 +67,12 @@ export function Home() {
               </InputGroup>
             </Field>
             <Button type="submit">
+              <Search data-icon="inline-start" aria-hidden="true" />
               ຄົ້ນຫາກອງທຶນ
-              <ArrowRight data-icon="inline-end" aria-hidden="true" />
             </Button>
           </form>
         </div>
-        <div className="hidden rounded-2xl bg-secondary px-6 py-8 sm:px-8 lg:block">
+        <div className="hero-journey hidden rounded-2xl bg-secondary px-6 py-8 sm:px-8 lg:block">
           <ol
             className="flex flex-col gap-6"
             aria-label="ຈາກຄວາມຕ້ອງການສູ່ການຊ່ວຍເຫຼືອ"
@@ -113,65 +108,57 @@ export function Home() {
           </ol>
         </div>
       </section>
-      <section aria-labelledby="recent-funds" className="flex flex-col gap-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 id="recent-funds" className="text-xl font-semibold">
-            ກອງທຶນລ່າສຸດ
-          </h2>
-          <Link to="/funds" className={buttonVariants({ variant: "link" })}>
-            ເບິ່ງທັງໝົດ
-            <ArrowRight data-icon="inline-end" aria-hidden="true" />
-          </Link>
-        </div>
-        <div className="flex flex-wrap gap-2" aria-label="ໝວດໝູ່ກອງທຶນ">
-          {categories.map(({ icon: Icon, label, value }) => (
-            <Link
-              key={value}
-              to={`/funds?category=${value}`}
-              className={buttonVariants({ variant: "outline", size: "sm" })}
-            >
-              <Icon data-icon="inline-start" aria-hidden="true" />
-              {label}
+      <Reveal>
+        <section aria-labelledby="recent-funds" className="flex flex-col gap-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="recent-funds" className="text-xl font-semibold">
+              ກອງທຶນລ່າສຸດ
+            </h2>
+            <Link to="/funds" className={buttonVariants({ variant: "link" })}>
+              ເບິ່ງທັງໝົດ
+              <ArrowRight data-icon="inline-end" aria-hidden="true" />
             </Link>
-          ))}
-        </div>
-        {defaultDeployment ? (
-          <RecentFunds />
-        ) : (
-          <EmptyState
-            title="ຍັງບໍ່ມີກອງທຶນ"
-            description="ກະລຸນາລອງໃໝ່ພາຍຫຼັງ."
-          />
-        )}
-      </section>
-      <section
-        aria-label="ຕິດຕາມການຊ່ວຍເຫຼືອ"
-        className="grid gap-6 border-t pt-8 sm:grid-cols-3"
-      >
-        {[
-          {
-            icon: Eye,
-            title: "ເຫັນຄວາມຄືບໜ້າ",
-            text: "ກວດຍອດສະໜັບສະໜູນຂອງແຕ່ລະກອງທຶນ.",
-          },
-          {
-            icon: Route,
-            title: "ຕິດຕາມເງິນໄດ້",
-            text: "ເບິ່ງປະຫວັດການຮັບ ແລະຈ່າຍເງິນສາທາລະນະ.",
-          },
-          {
-            icon: Users,
-            title: "ຮ່ວມກັນຮັບຜິດຊອບ",
-            text: "ກວດຜູ້ຈັດການ ແລະເງື່ອນໄຂການອະນຸມັດ.",
-          },
-        ].map(({ icon: Icon, title, text }) => (
-          <div key={title} className="flex flex-col gap-2">
-            <Icon className="mb-2 size-5 text-primary" aria-hidden="true" />
-            <h2 className="font-semibold">{title}</h2>
-            <p className="text-sm text-muted-foreground">{text}</p>
           </div>
-        ))}
-      </section>
+          {defaultDeployment ? (
+            <RecentFunds />
+          ) : (
+            <EmptyState
+              title="ຍັງບໍ່ມີກອງທຶນ"
+              description="ກະລຸນາລອງໃໝ່ພາຍຫຼັງ."
+            />
+          )}
+        </section>
+      </Reveal>
+      <Reveal>
+        <section
+          aria-label="ຕິດຕາມການຊ່ວຍເຫຼືອ"
+          className="grid gap-6 border-t pt-8 sm:grid-cols-3"
+        >
+          {[
+            {
+              icon: Eye,
+              title: "ເຫັນຄວາມຄືບໜ້າ",
+              text: "ກວດຍອດສະໜັບສະໜູນຂອງແຕ່ລະກອງທຶນ.",
+            },
+            {
+              icon: Route,
+              title: "ຕິດຕາມເງິນໄດ້",
+              text: "ເບິ່ງປະຫວັດການຮັບ ແລະຈ່າຍເງິນສາທາລະນະ.",
+            },
+            {
+              icon: Users,
+              title: "ຮ່ວມກັນຮັບຜິດຊອບ",
+              text: "ກວດຜູ້ຈັດການ ແລະເງື່ອນໄຂການອະນຸມັດ.",
+            },
+          ].map(({ icon: Icon, title, text }) => (
+            <div key={title} className="flex flex-col gap-2">
+              <Icon className="mb-2 size-5 text-primary" aria-hidden="true" />
+              <h2 className="font-semibold">{title}</h2>
+              <p className="text-sm text-muted-foreground">{text}</p>
+            </div>
+          ))}
+        </section>
+      </Reveal>
     </div>
   );
 }
@@ -189,6 +176,7 @@ function RecentFunds() {
           disabled={q.isFetching}
           onClick={() => q.refetch()}
         >
+          <RefreshCw data-icon="inline-start" aria-hidden="true" />
           ລອງໂຫຼດໃໝ່
         </Button>
       </div>

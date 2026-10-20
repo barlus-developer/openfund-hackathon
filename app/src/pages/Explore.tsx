@@ -1,7 +1,25 @@
+import {
+  Network,
+  ArrowDownWideNarrow,
+  Shapes,
+  Target,
+  Infinity as InfinityIcon,
+  CircleDot,
+  Undo2,
+  Wallet,
+  ShieldCheck,
+  Users,
+  SlidersHorizontal,
+  ListPlus,
+  RotateCcw,
+  RefreshCw,
+  Search,
+} from "lucide-react";
 import { PageHeader, Disclosure } from "@/components/patterns";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search } from "lucide-react";
+
+import { Spinner } from "@/components/ui/spinner";
 import { useFunds } from "@/web3/reads";
 import { defaultDeployment, deployments } from "@/web3/deployments";
 import { FundCard } from "@/features/funds/FundCard";
@@ -18,7 +36,7 @@ import {
   Loading,
   SelectField,
 } from "@/components/common";
-import { categoryLabel, fundStatusLabels } from "@/app/labels";
+import { fundStatusLabels } from "@/app/labels";
 
 export function Explore() {
   const [params, setParams] = useSearchParams();
@@ -41,6 +59,7 @@ export function Explore() {
           {deployments.length > 1 ? (
             <Disclosure title="ເລືອກເຄືອຂ່າຍ">
               <SelectField
+                icon={Network}
                 label="ເຄືອຂ່າຍ"
                 value={version!}
                 onChange={setVersion}
@@ -62,7 +81,6 @@ export function Explore() {
 function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
   const q = useFunds(d);
   const [params, setParams] = useSearchParams();
-  const category = params.get("category") || "all";
   const search = params.get("q") || "";
   const setSearch = (value: string) =>
     setParams(
@@ -80,18 +98,6 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
   const [quorum, setQuorum] = useState("all");
   const [sort, setSort] = useState("recent");
   const loaded = q.data?.pages.flatMap((p) => p.rows) ?? [];
-  const categoryOptions = [
-    ...new Map(
-      [
-        "Projects",
-        "Community",
-        "Education",
-        "Healthcare",
-        ...loaded.map((r) => r.fund.category),
-        ...(category === "all" ? [] : [category]),
-      ].map((value) => [categoryLabel(value), value]),
-    ).values(),
-  ];
   const rows = loaded.filter(
     (r) =>
       (r.fund.title + " " + r.fund.summary)
@@ -102,8 +108,6 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
       (policy === "all" ||
         (r.fund.config.fundingMode === 0 &&
           r.fund.config.underfundingPolicy === Number(policy))) &&
-      (category === "all" ||
-        categoryLabel(r.fund.category) === categoryLabel(category)) &&
       (quorum === "all" ||
         (quorum === "multi" ? r.fund.threshold > 1 : r.fund.threshold === 1)),
   );
@@ -125,7 +129,6 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
   });
   const hasFilters =
     !!search ||
-    category !== "all" ||
     mode !== "all" ||
     status !== "all" ||
     policy !== "all" ||
@@ -146,7 +149,7 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
     <div className="flex min-w-0 flex-col gap-6">
       <section aria-label="ຄົ້ນຫາ ແລະກັ່ນຕອງກອງທຶນ">
         <FieldGroup>
-          <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-[2fr_1fr_1fr]">
+          <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-[2fr_1fr]">
             <Field>
               <FieldLabel htmlFor="fund-search">ຄົ້ນຫາກອງທຶນ</FieldLabel>
               <InputGroup>
@@ -162,22 +165,7 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
               </InputGroup>
             </Field>
             <SelectField
-              label="ໝວດໝູ່"
-              value={category}
-              onChange={(value) =>
-                setParams((old) => {
-                  const next = new URLSearchParams(old);
-                  if (value === "all") next.delete("category");
-                  else next.set("category", value);
-                  return next;
-                })
-              }
-              options={[
-                ["all", "ທຸກໝວດໝູ່"],
-                ...categoryOptions.map((v) => [v, categoryLabel(v)] as const),
-              ]}
-            />
-            <SelectField
+              icon={ArrowDownWideNarrow}
               label="ຈັດລຽງຕາມ"
               value={sort}
               onChange={setSort}
@@ -188,9 +176,12 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
               ]}
             />
           </div>
-          <Disclosure title={<>ຕົວເລືອກເພີ່ມເຕີມ</>}>
+          <Disclosure icon={SlidersHorizontal} title={<>ຕົວເລືອກເພີ່ມເຕີມ</>}>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <SelectField
+                icon={
+                  mode === "0" ? Target : mode === "1" ? InfinityIcon : Shapes
+                }
                 label="ຮູບແບບ"
                 value={mode}
                 onChange={setMode}
@@ -201,6 +192,7 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
                 ]}
               />
               <SelectField
+                icon={CircleDot}
                 label="ສະຖານະ"
                 value={status}
                 onChange={setStatus}
@@ -210,6 +202,9 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
                 ]}
               />
               <SelectField
+                icon={
+                  policy === "0" ? Undo2 : policy === "1" ? Wallet : ShieldCheck
+                }
                 label="ຖ້າບໍ່ເຖິງເປົ້າໝາຍ"
                 value={policy}
                 onChange={setPolicy}
@@ -220,6 +215,7 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
                 ]}
               />
               <SelectField
+                icon={Users}
                 label="ການອະນຸມັດ"
                 value={quorum}
                 onChange={setQuorum}
@@ -234,7 +230,7 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
         </FieldGroup>
       </section>
       <div
-        className="text-xs leading-7 text-muted-foreground"
+        className="min-h-7 text-xs leading-7 text-muted-foreground"
         aria-live="polite"
       >
         {q.isLoading ? "" : `${rows.length} ກອງທຶນ`}
@@ -245,6 +241,7 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
       {hasFilters && rows.length > 0 ? (
         <div>
           <Button variant="ghost" size="sm" onClick={reset}>
+            <RotateCcw data-icon="inline-start" aria-hidden="true" />
             ລ້າງຕົວເລືອກການຄົ້ນຫາ
           </Button>
         </div>
@@ -257,6 +254,7 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
             disabled={q.isFetching}
             onClick={() => q.refetch()}
           >
+            <RefreshCw data-icon="inline-start" aria-hidden="true" />
             ລອງໂຫຼດໃໝ່
           </Button>
         </div>
@@ -273,11 +271,14 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
         <EmptyState
           title={hasFilters ? "ບໍ່ພົບກອງທຶນ" : "ຍັງບໍ່ມີກອງທຶນ"}
           description={
-            hasFilters ? "ລອງໃຊ້ຄຳຄົ້ນຫາອື່ນ ຫຼືປ່ຽນໝວດໝູ່." : undefined
+            hasFilters
+              ? "ລອງໃຊ້ຄຳຄົ້ນຫາອື່ນ ຫຼືປ່ຽນຕົວເລືອກການຄົ້ນຫາ."
+              : undefined
           }
           action={
             hasFilters ? (
               <Button variant="outline" onClick={reset}>
+                <RotateCcw data-icon="inline-start" aria-hidden="true" />
                 ລ້າງຕົວເລືອກການຄົ້ນຫາ
               </Button>
             ) : undefined
@@ -288,8 +289,14 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
         <Button
           variant="outline"
           disabled={q.isFetchingNextPage}
+          aria-busy={q.isFetchingNextPage}
           onClick={() => q.fetchNextPage()}
         >
+          {q.isFetchingNextPage ? (
+            <Spinner data-icon="inline-start" aria-hidden="true" />
+          ) : (
+            <ListPlus data-icon="inline-start" aria-hidden="true" />
+          )}
           {q.isFetchingNextPage ? "ກຳລັງໂຫຼດ…" : "ໂຫຼດກອງທຶນເພີ່ມ"}
         </Button>
       ) : null}

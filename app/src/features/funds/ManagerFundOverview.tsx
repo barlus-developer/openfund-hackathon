@@ -1,10 +1,5 @@
 import { Link } from "react-router-dom";
-import {
-  ArrowUpRight,
-  ListChecks,
-  ArrowLeftRight,
-  FileText,
-} from "lucide-react";
+import { Send, ListChecks, ArrowLeftRight, FileText } from "lucide-react";
 import { Stat } from "@/components/patterns";
 import { FundProgress } from "./FundCard";
 import { useFundContext } from "./FundLayout";
@@ -72,7 +67,7 @@ export function ManagerFundOverview() {
             {
               path: "spending",
               label: "ສະເໜີຈ່າຍເງິນ ຫຼືປ່ຽນແປງກອງທຶນ",
-              icon: ArrowUpRight,
+              icon: Send,
             },
             {
               path: "proposals",

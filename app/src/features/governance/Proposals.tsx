@@ -1,3 +1,4 @@
+import { ChevronRight, Send, ListPlus, Check, Play, X } from "lucide-react";
 import { Disclosure } from "@/components/patterns";
 import { actionLabels, proposalStatusLabels } from "@/app/labels";
 import { useState } from "react";
@@ -51,7 +52,11 @@ export function Governance() {
           </dd>
         </dl>
         <div className="mt-6">
-          <ActionLink to={managerFundPath(d, row.id) + "/spending"} outline>
+          <ActionLink
+            icon={Send}
+            to={managerFundPath(d, row.id) + "/spending"}
+            outline
+          >
             {" "}
             ສະເໜີການດຳເນີນງານ{" "}
           </ActionLink>
@@ -107,7 +112,7 @@ export function ProposalList() {
           results.map((r, i) =>
             r.data ? (
               <Link
-                className="flex min-w-0 flex-col justify-between gap-4 border-b py-5 last:border-0 sm:flex-row"
+                className="group flex min-w-0 flex-col justify-between gap-4 rounded-lg border-b py-5 last:border-0 hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-ring sm:flex-row sm:items-center"
                 key={ids[i].toString()}
                 to={managerFundPath(d, row.id) + `/proposals/${ids[i]}`}
               >
@@ -121,9 +126,15 @@ export function ProposalList() {
                     {date(r.data[0].createdAt)}
                   </small>
                 </div>
-                <Badge variant="outline">
-                  {proposalStatusLabels[r.data[1]]}
-                </Badge>
+                <span className="flex shrink-0 items-center gap-3">
+                  <Badge variant="outline">
+                    {proposalStatusLabels[r.data[1]]}
+                  </Badge>
+                  <ChevronRight
+                    className="size-4 shrink-0 text-muted-foreground group-hover:text-primary"
+                    aria-hidden="true"
+                  />
+                </span>
               </Link>
             ) : r.error ? (
               <ErrorNotice key={ids[i].toString()} error={r.error} />
@@ -134,7 +145,7 @@ export function ProposalList() {
         )}
         {ids.length > limit ? (
           <Button variant="outline" onClick={() => setLimit((n) => n + 12)}>
-            {" "}
+            <ListPlus data-icon="inline-start" aria-hidden="true" />{" "}
             ໂຫຼດຂໍ້ສະເໜີເພີ່ມ 12 ລາຍການ{" "}
           </Button>
         ) : null}
@@ -268,6 +279,7 @@ function Detail({ id }: { id: bigint }) {
                   )
                 }
               >
+                <Check data-icon="inline-start" aria-hidden="true" />
                 {t("approve")}
                 {voted.data ? " · ອະນຸມັດແລ້ວ" : ""}
               </Button>
@@ -292,6 +304,7 @@ function Detail({ id }: { id: bigint }) {
                   )
                 }
               >
+                <Play data-icon="inline-start" aria-hidden="true" />
                 {t("execute")}
               </Button>
             ) : null}
@@ -310,6 +323,7 @@ function Detail({ id }: { id: bigint }) {
                   )
                 }
               >
+                <X data-icon="inline-start" aria-hidden="true" />
                 {t("cancel")}
               </Button>
             ) : null}

@@ -1,3 +1,4 @@
+import { HandHeart, Undo2, Archive } from "lucide-react";
 import { Disclosure, Stat } from "@/components/patterns";
 import { useConnection } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
@@ -42,7 +43,7 @@ export function FundOverview() {
               </p>
             ) : null}
             {accepts ? (
-              <ActionLink to={fundPath(d, row.id) + "/donate"}>
+              <ActionLink icon={HandHeart} to={fundPath(d, row.id) + "/donate"}>
                 {t("donate")}
               </ActionLink>
             ) : (
@@ -196,6 +197,7 @@ export function RefundClaim() {
             )
           }
         >
+          <Undo2 data-icon="inline-start" aria-hidden="true" />
           {t("refund")}
         </Button>
         <small> ເງິນຈະກັບໄປກະເປົາທີ່ສະໜັບສະໜູນ. ຕ້ອງມີຄ່າທຳນຽມເຄືອຂ່າຍ. </small>
@@ -231,7 +233,7 @@ export function ClosureFinalize() {
               )
             }
           >
-            {" "}
+            <Archive data-icon="inline-start" aria-hidden="true" />{" "}
             ປິດກອງທຶນຖາວອນ{" "}
           </Button>
         ) : (

@@ -1,3 +1,8 @@
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { Suspense, useEffect, useState } from "react";
 import {
   Link,
@@ -28,6 +33,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Loading } from "@/components/common";
+import { RouteSurface } from "@/components/motion";
 import { Connect } from "@/features/wallet/Connect";
 import { defaultDeployment, resolveDeployment } from "@/web3/deployments";
 
@@ -111,18 +117,25 @@ export function ManagerLayout() {
             </div>
             <Connect chainId={d?.chainId} compact />
             <Sheet open={menu} onOpenChange={setMenu}>
-              <SheetTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="lg:hidden"
-                    aria-label="ເປີດເມນູຈັດການ"
-                  />
-                }
-              >
-                <Menu />
-              </SheetTrigger>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <SheetTrigger
+                      render={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="lg:hidden"
+                          aria-label="ເປີດເມນູຈັດການ"
+                        />
+                      }
+                    >
+                      <Menu aria-hidden="true" />
+                    </SheetTrigger>
+                  }
+                />
+                <TooltipContent>ເປີດເມນູຈັດການ</TooltipContent>
+              </Tooltip>
               <SheetContent className="overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>Funding Manager</SheetTitle>
@@ -160,9 +173,11 @@ export function ManagerLayout() {
           tabIndex={-1}
           className="flex min-w-0 flex-col gap-8 px-5 py-8 outline-none sm:px-8 lg:p-10"
         >
-          <Suspense fallback={<Loading />}>
-            <Outlet />
-          </Suspense>
+          <RouteSurface>
+            <Suspense fallback={<Loading />}>
+              <Outlet />
+            </Suspense>
+          </RouteSurface>
         </main>
       </div>
     </>
