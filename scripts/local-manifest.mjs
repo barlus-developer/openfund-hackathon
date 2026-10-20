@@ -1,7 +1,11 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { env } from "./config.mjs";
+import { env, httpURL } from "./config.mjs";
 import { client, requireAnvil, rpc } from "./local-env.mjs";
 await requireAnvil();
+const explorer = env("LOCAL_EXPLORER_URL");
+const explorerUrl = explorer
+  ? httpURL(explorer, "LOCAL_EXPLORER_URL", true).replace(/\/$/, "")
+  : undefined;
 const manifests = JSON.parse(readFileSync("deployments/official.json", "utf8"));
 if (process.argv.includes("--check")) {
   if (
@@ -41,6 +45,7 @@ current.unshift({
   deploymentBlock: receipt.blockNumber.toString(),
   deploymentBlockHash: block.hash,
   rpcUrls: [rpc],
+  ...(explorerUrl ? { explorerUrl } : {}),
   demoMode: true,
   testnet: true,
   confirmations: 1,

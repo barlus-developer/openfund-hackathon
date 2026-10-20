@@ -8,6 +8,11 @@
   ],
   "scripts": {
     "dev": "npm run dev -w app --",
+    "dev:docker": "VITE_IPFS_API_URL=http://127.0.0.1:5001 VITE_IPFS_GATEWAY=http://127.0.0.1:8080/ipfs/ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort",
+    "docker:up": "docker compose up --build -d --wait",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:status": "docker compose ps",
     "build": "npm run build -w app",
     "typecheck": "npm run typecheck -w app",
     "test": "npm run test -w app",

@@ -29,6 +29,53 @@ npm run dev
 
 Deployment generates actual addresses and a deployment-block hash in [deployments/official.json](deployments/official.json), generated ABIs and the app manifest under `app/src/web3/generated/`. Never copy an example address into configuration. Restart/reload Vite after redeploying. Scripts refuse accidental manifest overwrite and refuse seeding a nonempty protocol. Existing funds remain at their original address. Keep their manifest under a **distinct version name** if intentionally deploying another version on an existing chain.
 
+## Local blockchain and IPFS with Docker
+
+Requires Docker Engine/Desktop with Docker Compose v2 or newer. From the repository root:
+
+```bash
+docker compose up --build -d --wait
+```
+
+This builds and serves the OpenFund app at **http://127.0.0.1:5173** alongside Anvil, IPFS and Blockscout. With an existing deployed Docker chain, the stack needs only Docker to run. `npm run docker:up` runs the same command when Node/npm are installed.
+
+For a fresh chain, deploy and seed once before building the app. These contract CLI commands require the Node/npm versions listed above:
+
+```bash
+npm ci
+docker compose up -d --wait anvil ipfs explorer
+# First deployment to a fresh Docker chain:
+LOCAL_EXPLORER_URL=http://127.0.0.1:4000 REPLACE_LOCAL_DEPLOYMENT=1 npm run deploy:local
+npm run seed:local
+docker compose up --build -d --wait
+```
+
+Compose builds the static React app in a Node stage and serves its `app/dist` output with Nginx. It starts Anvil **1.7.1** (chain ID **31337**), IPFS Kubo **0.43.1**, and a **Blockscout** explorer, waits for healthy services, and saves chain, IPFS and explorer data in named Docker volumes. The app uses local IPFS uploads and document verification. In Reports, choose Kubo and leave the authorization field empty for this local node.
+
+| Service               | Local URL                          |
+| --------------------- | ---------------------------------- |
+| OpenFund app          | `http://127.0.0.1:5173`            |
+| Ethereum JSON-RPC     | `http://127.0.0.1:8545`            |
+| Blockscout explorer   | `http://127.0.0.1:4000`            |
+| IPFS upload/admin API | `http://127.0.0.1:5001`            |
+| IPFS content gateway  | `http://127.0.0.1:8080/ipfs/<CID>` |
+
+Use `docker compose ps`, `docker compose logs -f`, and `docker compose down` to manage the stack; the corresponding `npm run docker:status`, `npm run docker:logs`, and `npm run docker:down` aliases also work. Start everything again with `docker compose up --build -d --wait`; existing deployments, funds and pinned files are retained, so skip deployment and seeding on subsequent starts. Stop any native Anvil already using port 8545 or Vite using port 5173 before starting Compose. `npm run local` starts its own native Anvil; use the Docker commands above for this workflow.
+
+The app image includes its deployment manifest and public Vite configuration at build time. Rebuild it after changing source, redeploying contracts or changing the public build arguments in `compose.yaml`: `docker compose up --build -d --wait app`. Host `.env` files and host `node_modules` are excluded from the build context. For Vite development with live updates, run `docker compose stop app` to free port 5173, then `npm run dev:docker` on the host.
+
+Blockscout indexes existing and new blocks, transactions, addresses and token transfers from Anvil. The explorer's PostgreSQL and Redis services are internal to Docker. Its first start runs database migrations and can take a few minutes. Anvil's internal-transaction and pending-transaction fetchers are disabled following Blockscout's Anvil configuration; the optional statistics, account and verification microservices are not included. `LOCAL_EXPLORER_URL` adds explorer links to the app and wallet network metadata when generating a deployment manifest. For an already deployed chain, update the metadata without redeploying:
+
+```bash
+LOCAL_EXPLORER_URL=http://127.0.0.1:4000 node scripts/local-manifest.mjs
+npm run abi
+docker compose up --build -d --wait app
+```
+
+All published ports bind to loopback. IPFS runs offline and serves locally pinned content; these files are available through this local gateway and are not advertised to the public IPFS network. Upload CORS allows localhost/127.0.0.1 on app ports 5173, 5180 and 4173. Anvil uses the public development accounts described below, checkpoints every five seconds and saves on graceful shutdown. Docker volumes are removed only by an explicit `docker compose down --volumes`; that deletes chain, IPFS and explorer data and requires a fresh deployment/seed afterward.
+
+Configuration follows the official [Foundry Docker guide](https://getfoundry.sh/guides/docker), [Kubo Docker guide](https://docs.ipfs.tech/install/run-ipfs-inside-docker/), and [Blockscout Anvil setup](https://github.com/blockscout/blockscout/blob/master/docker-compose/anvil.yml).
+
 ## Your developer RPC and real IPFS
 
 Use [the remote development guide](docs/DEVELOPMENT_NETWORK.md) to configure your actual network and upload service. Copy `.env.example` to the **repository root** `.env`; Vite and the development CLI helpers read it. Import a deployed protocol using its real creation receipt with `npm run deployment:import`, then run `npm run dev`. The importer validates chain identity, compiled runtimes and protected registration before exporting addresses. The first manifest entry is selected automatically; set `VITE_DEFAULT_DEPLOYMENT` only to pin a version.

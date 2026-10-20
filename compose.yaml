@@ -1,0 +1,186 @@
+name: openfund-local
+
+services:
+  app:
+    image: openfund-local-app:latest
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+      args:
+        VITE_DEFAULT_DEPLOYMENT: local-v1
+        VITE_RPC_URL: http://127.0.0.1:8545
+        VITE_IPFS_API_URL: http://127.0.0.1:5001
+        VITE_IPFS_GATEWAY: http://127.0.0.1:8080/ipfs/
+    ports:
+      - "127.0.0.1:5173:80"
+    depends_on:
+      anvil:
+        condition: service_healthy
+      ipfs:
+        condition: service_healthy
+      explorer:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:v1.7.1
+    entrypoint: ["anvil"]
+    command:
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8545"
+      - --chain-id
+      - "31337"
+      - --hardfork
+      - prague
+      - --state
+      - /home/foundry/state.json
+      - --state-interval
+      - "5"
+      - --preserve-historical-states
+    ports:
+      - "127.0.0.1:8545:8545"
+    volumes:
+      # The image's home directory belongs to its non-root foundry user.
+      - anvil-data:/home/foundry
+    healthcheck:
+      test: ["CMD", "cast", "chain-id", "--rpc-url", "http://127.0.0.1:8545"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  ipfs:
+    image: ipfs/kubo:v0.43.1
+    # Local uploads and gateway reads work without joining the public swarm.
+    command: ["daemon", "--offline", "--migrate=true"]
+    environment:
+      IPFS_PROFILE: server
+    ports:
+      - "127.0.0.1:5001:5001"
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ipfs-data:/data/ipfs
+      - ./docker/ipfs/001-local-config.sh:/container-init.d/001-local-config.sh:ro
+    healthcheck:
+      test: ["CMD", "ipfs", "id"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  explorer-db:
+    image: postgres:17.11-alpine
+    environment:
+      POSTGRES_DB: blockscout
+      POSTGRES_USER: blockscout
+      POSTGRES_PASSWORD: openfund-local
+    volumes:
+      - explorer-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blockscout -d blockscout"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  explorer-redis:
+    image: redis:8.10.2-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  explorer-api:
+    # Blockscout 9.0.2, pinned to the published image digest.
+    image: ghcr.io/blockscout/blockscout@sha256:7659f168e4e2f6b73dd559ae5278fe96ba67bc2905ea01b57a814c68adf5a9dc
+    command:
+      - /bin/sh
+      - -c
+      - bin/blockscout eval 'Elixir.Explorer.ReleaseTasks.create_and_migrate()' && exec bin/blockscout start
+    env_file: ./docker/explorer/backend.env
+    depends_on:
+      anvil:
+        condition: service_healthy
+      explorer-db:
+        condition: service_healthy
+      explorer-redis:
+        condition: service_healthy
+    volumes:
+      - explorer-dets:/app/dets
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:4000/api/v2/stats"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 60s
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 60s
+
+  explorer-web:
+    # Blockscout frontend 2.3.5.
+    image: ghcr.io/blockscout/frontend@sha256:4b69f44148414b55c6b8550bc3270c63c9f99e923d54ef0b307e762af6bac90a
+    env_file: ./docker/explorer/frontend.env
+    depends_on:
+      explorer-api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+    init: true
+    restart: unless-stopped
+
+  explorer:
+    image: nginx@sha256:970364228b1e4f932abc22d321932816782cca8a20b85a77552a7cfe9acfb3b5
+    ports:
+      - "127.0.0.1:4000:80"
+    volumes:
+      - ./docker/explorer/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      explorer-api:
+        condition: service_healthy
+      explorer-web:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "-O",
+          "/dev/null",
+          "http://127.0.0.1/api/v2/stats",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+    restart: unless-stopped
+
+volumes:
+  anvil-data:
+  ipfs-data:
+  explorer-db:
+  explorer-dets:

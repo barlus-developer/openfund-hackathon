@@ -2,6 +2,8 @@
 
 Run commands from repository root. `npm ci` installs pinned npm Foundry binaries, OpenZeppelin and the app. forge-std is vendored; do not run forge install. First compilation obtains the configured compiler.
 
+For the app, Docker blockchain, local IPFS server and Blockscout explorer, follow [Local blockchain and IPFS with Docker](../README.md#local-blockchain-and-ipfs-with-docker). `docker compose up --build -d --wait` (or `npm run docker:up`) builds and starts the app at `http://127.0.0.1:5173` and the explorer at `http://127.0.0.1:4000`. On a fresh chain, start `anvil ipfs explorer`, deploy and seed once using the host CLI, then build/start the app. Set `LOCAL_EXPLORER_URL=http://127.0.0.1:4000` when generating the local manifest to enable explorer links. Rebuild the app after regenerating that manifest. `docker compose down` retains the data volumes.
+
 ```bash
 REPLACE_LOCAL_DEPLOYMENT=1 npm run local
 ```
