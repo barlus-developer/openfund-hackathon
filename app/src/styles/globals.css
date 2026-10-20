@@ -73,6 +73,9 @@
     font-synthesis: none;
     text-rendering: optimizeLegibility;
   }
+  body:has(.home-page) {
+    background: #fff;
+  }
   button,
   a,
   input,

@@ -69,7 +69,13 @@ export function Layout() {
     <>
       <SkipLink />
       <DemoBanner demo={d?.demoMode} />
-      <header className="border-b bg-background">
+      <header
+        className={
+          pathname === "/"
+            ? "border-b border-transparent bg-transparent"
+            : "border-b bg-background"
+        }
+      >
         <div className="mx-auto flex min-h-22 max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
           <Brand />
           <div className="hidden lg:block">

@@ -37,14 +37,14 @@ export function Home() {
     );
   }
   return (
-    <div className="flex flex-col gap-8 sm:gap-12">
+    <div className="home-page flex flex-col gap-8 sm:gap-12">
       <section className="grid items-center gap-8 py-4 sm:py-8 lg:grid-cols-[1.4fr_1fr] lg:gap-16">
         <div className="flex flex-col items-start gap-6">
           <p className="eyebrow">
             <HandHeart className="size-4" aria-hidden="true" />
             ເລີ່ມຈາກຄວາມຫ່ວງໃຍ · ເຕີບໂຕດ້ວຍພະລັງຊຸມຊົນ
           </p>
-          <h1 className="text-3xl font-semibold leading-relaxed sm:text-5xl sm:leading-relaxed">
+          <h1 className="text-3xl font-bold leading-relaxed sm:text-5xl sm:leading-relaxed">
             ຮ່ວມສ້າງສິ່ງດີໆ
             <br />
             <span className="text-primary">ໃຫ້ຊຸມຊົນຂອງເຮົາ.</span>
