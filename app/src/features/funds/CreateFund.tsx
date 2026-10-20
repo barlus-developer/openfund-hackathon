@@ -1,9 +1,10 @@
 import { PageHeader, ProgressSteps, Disclosure } from "@/components/patterns";
+import { ZodError } from "zod";
 import { friendlyError } from "@/lib/errors";
 import { stored, remember, forget } from "@/lib/storage";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useConnection } from "wagmi";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { encodeFunctionData, parseEventLogs } from "viem";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
@@ -17,7 +18,12 @@ import {
   EmptyState,
 } from "@/components/common";
 import { useLanguage } from "@/app/i18n";
-import { defaultDeployment, deployments, fundPath } from "@/web3/deployments";
+import {
+  defaultDeployment,
+  deployments,
+  resolveDeployment,
+  managerFundPath,
+} from "@/web3/deployments";
 import { openFundAbi } from "@/web3/generated/OpenFund";
 import { useTransaction } from "@/hooks/useTransaction";
 import { emptyDraft, creationArgs, validateStep, type Draft } from "./creation";
@@ -31,7 +37,12 @@ export function CreateFund() {
 }
 function Wizard() {
   const connection = useConnection();
-  const [version, setVersion] = useState(defaultDeployment!.version);
+  const [params, setParams] = useSearchParams();
+  const version = (
+    resolveDeployment(params.get("deployment") ?? undefined) ??
+    defaultDeployment!
+  ).version;
+  const setVersion = (value: string) => setParams({ deployment: value });
   const d = deployments.find((x) => x.version === version)!;
   const [draft, setDraft] = useState<Draft>(() => {
     try {
@@ -51,6 +62,20 @@ function Wizard() {
   const { t } = useLanguage(),
     navigate = useNavigate();
   const tx = useTransaction(d);
+  const errorSummary = useRef<HTMLDivElement>(null);
+  const progressHeading = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    progressHeading.current?.focus();
+  }, [step]);
+  const fields: Partial<Record<keyof Draft, string>> = {};
+  if (error instanceof ZodError)
+    for (const issue of error.issues) {
+      const key = issue.path[0] as keyof Draft;
+      if (key) fields[key] = friendlyError(new ZodError([issue]));
+    }
+  useEffect(() => {
+    if (error) errorSummary.current?.focus();
+  }, [error]);
   useEffect(() => {
     remember("ofl-draft-v1", JSON.stringify(draft));
   }, [draft]);
@@ -64,6 +89,8 @@ function Wizard() {
   ) => (
     <TextField
       key={key}
+      id={`fund-${key}`}
+      error={fields[key]}
       label={label}
       value={draft[key]}
       onChange={change(key)}
@@ -111,7 +138,7 @@ function Wizard() {
           "ຍັງບໍ່ພົບຫຼັກຖານການສ້າງກອງທຶນ. ກະລຸນາກວດໃບຢືນຢັນກ່ອນລອງໃໝ່.",
         );
       forget("ofl-draft-v1");
-      navigate(fundPath(d, created.args.fundId));
+      navigate(managerFundPath(d, created.args.fundId));
     } catch (e) {
       setError(e);
     }
@@ -136,16 +163,25 @@ function Wizard() {
           label="ເຄືອຂ່າຍທີ່ໃຊ້ສ້າງກອງທຶນ"
           value={version}
           onChange={setVersion}
+          disabled={tx.busy}
           options={deployments.map((d) => [
             d.version,
             `${d.chainId === 31337 ? "ເຄືອຂ່າຍທົດລອງ" : d.chainId} · ${d.version}`,
           ])}
         />
       ) : null}
-      <ProgressSteps
-        step={step}
-        labels={["ຂໍ້ມູນ", "ລະດົມທຶນ", "ການອະນຸມັດ", "ຜູ້ຮັບ", "ກວດສອບ"]}
-      />
+      <div
+        ref={progressHeading}
+        tabIndex={-1}
+        className="outline-none"
+        role="group"
+        aria-label={`ຂັ້ນຕອນທີ່ ${step + 1} / 5`}
+      >
+        <ProgressSteps
+          step={step}
+          labels={["ຂໍ້ມູນ", "ລະດົມທຶນ", "ການອະນຸມັດ", "ຜູ້ຮັບ", "ກວດສອບ"]}
+        />
+      </div>
       <Panel
         title={
           [
@@ -157,211 +193,250 @@ function Wizard() {
           ][step]
         }
       >
-        <FieldGroup>
-          {step === 0 ? (
-            <>
-              {input("title", t("title"), "ພາສາລາວປະມານ 40 ຕົວອັກສອນ.")}
-              {input(
-                "summary",
-                t("summary"),
-                "ຊ່ວຍໃຜ ແລະຈະນຳໃຊ້ເງິນແນວໃດ?",
-                true,
-              )}
-              {input("category", "ໝວດໝູ່")}
-              {input("manager", t("manager"))}
-              <Button
-                variant="outline"
-                onClick={() =>
-                  connection.address && change("manager")(connection.address)
-                }
-                disabled={!connection.address}
+        {error ? (
+          <div
+            ref={errorSummary}
+            tabIndex={-1}
+            className="mb-6 flex flex-col gap-3 outline-none"
+          >
+            <ErrorNotice error={error} />
+            {Object.entries(fields).map(([key, message]) => (
+              <a
+                key={key}
+                href={`#fund-${key}`}
+                className="text-sm text-primary underline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById(`fund-${key}`)?.focus();
+                }}
               >
-                {" "}
-                ໃຊ້ກະເປົາທີ່ເຊື່ອມຢູ່{" "}
-              </Button>
-              {input(
-                "terms",
-                "ຈຸດປະສົງ ແລະເງື່ອນໄຂຖາວອນ",
-                "ເງື່ອນໄຂນີ້ຈະປ່ຽນບໍ່ໄດ້ຫຼັງສ້າງກອງທຶນ. ກະລຸນາເກັບສຳເນົາໄວ້ນຳ.",
-                true,
-              )}
-              <Disclosure title="ຂໍ້ມູນເພີ່ມເຕີມ (ຖ້າມີ)">
-                {input("location", "ສະຖານທີ່ (ຖ້າມີ)")}
-                {input("termsURI", "ລິ້ງເອກະສານເງື່ອນໄຂ (ຖ້າມີ)")}
-                {input("metadataURI", "ລິ້ງຂໍ້ມູນເພີ່ມເຕີມ (ຖ້າມີ)")}
-              </Disclosure>
-              <Notice title="ຂໍ້ມູນສາທາລະນະຖາວອນ">{t("privacy")}</Notice>
-            </>
-          ) : null}
-          {step === 1 ? (
-            <>
-              <SelectField
-                label="ຮູບແບບການລະດົມທຶນ"
-                value={draft.mode}
-                onChange={change("mode")}
-                options={[
-                  ["0", "ລະດົມທຶນຕາມເປົ້າໝາຍ"],
-                  ["1", "ຮັບສະໜັບສະໜູນຕໍ່ເນື່ອງ"],
-                ]}
-              />
-              {draft.mode === "0" ? (
-                <>
-                  {input("goal", t("goal") + " (OFL)")}
-                  {input("days", "ໄລຍະເວລາ (1–365 ວັນ)")}
-                  <SelectField
-                    label="ຖ້າບໍ່ເຖິງເປົ້າໝາຍ"
-                    value={draft.policy}
-                    onChange={change("policy")}
-                    options={[
-                      ["", "ເລືອກເງື່ອນໄຂ…"],
-                      ["0", "ຄືນເງິນໃຫ້ຜູ້ສະໜັບສະໜູນ"],
-                      ["1", "ເກັບເງິນໄວ້ດຳເນີນງານ"],
-                    ]}
-                  />
-                  <small>
-                    {" "}
-                    ວັນສິ້ນສຸດໂດຍປະມານ:{" "}
-                    {Number.isFinite(+draft.days)
-                      ? new Date(
-                          previewTime +
-                            Math.min(365, Math.max(0, +draft.days)) * 86400000,
-                        ).toLocaleString("lo-LA", { timeZoneName: "short" })
-                      : "—"}{" "}
-                    . ວັນທີຈິງຈະຖືກກຳນົດເມື່ອສ້າງກອງທຶນສຳເລັດ.{" "}
-                  </small>
+                {message}
+              </a>
+            ))}
+          </div>
+        ) : null}
+        <fieldset disabled={tx.busy} className="min-w-0">
+          <FieldGroup>
+            {step === 0 ? (
+              <>
+                {input("title", t("title"), "ພາສາລາວປະມານ 40 ຕົວອັກສອນ.")}
+                {input(
+                  "summary",
+                  t("summary"),
+                  "ຊ່ວຍໃຜ ແລະຈະນຳໃຊ້ເງິນແນວໃດ?",
+                  true,
+                )}
+                {input("category", "ໝວດໝູ່")}
+                {input("manager", t("manager"))}
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    connection.address && change("manager")(connection.address)
+                  }
+                  disabled={!connection.address}
+                >
+                  {" "}
+                  ໃຊ້ກະເປົາທີ່ເຊື່ອມຢູ່{" "}
+                </Button>
+                {input(
+                  "terms",
+                  "ຈຸດປະສົງ ແລະເງື່ອນໄຂຖາວອນ",
+                  "ເງື່ອນໄຂນີ້ຈະປ່ຽນບໍ່ໄດ້ຫຼັງສ້າງກອງທຶນ. ກະລຸນາເກັບສຳເນົາໄວ້ນຳ.",
+                  true,
+                )}
+                <Disclosure
+                  key={String(
+                    !!(
+                      fields.location ||
+                      fields.termsURI ||
+                      fields.metadataURI
+                    ),
+                  )}
+                  defaultOpen={
+                    !!(fields.location || fields.termsURI || fields.metadataURI)
+                  }
+                  title="ຂໍ້ມູນເພີ່ມເຕີມ (ຖ້າມີ)"
+                >
+                  {input("location", "ສະຖານທີ່ (ຖ້າມີ)")}
+                  {input("termsURI", "ລິ້ງເອກະສານເງື່ອນໄຂ (ຖ້າມີ)")}
+                  {input("metadataURI", "ລິ້ງຂໍ້ມູນເພີ່ມເຕີມ (ຖ້າມີ)")}
+                </Disclosure>
+                <Notice title="ຂໍ້ມູນສາທາລະນະຖາວອນ">{t("privacy")}</Notice>
+              </>
+            ) : null}
+            {step === 1 ? (
+              <>
+                <SelectField
+                  label="ຮູບແບບການລະດົມທຶນ"
+                  value={draft.mode}
+                  onChange={change("mode")}
+                  options={[
+                    ["0", "ລະດົມທຶນຕາມເປົ້າໝາຍ"],
+                    ["1", "ຮັບສະໜັບສະໜູນຕໍ່ເນື່ອງ"],
+                  ]}
+                />
+                {draft.mode === "0" ? (
+                  <>
+                    {input("goal", t("goal") + " (OFL)")}
+                    {input("days", "ໄລຍະເວລາ (1–365 ວັນ)")}
+                    <SelectField
+                      label="ຖ້າບໍ່ເຖິງເປົ້າໝາຍ"
+                      id="fund-policy"
+                      error={fields.policy}
+                      value={draft.policy}
+                      onChange={change("policy")}
+                      options={[
+                        ["", "ເລືອກເງື່ອນໄຂ…"],
+                        ["0", "ຄືນເງິນໃຫ້ຜູ້ສະໜັບສະໜູນ"],
+                        ["1", "ເກັບເງິນໄວ້ດຳເນີນງານ"],
+                      ]}
+                    />
+                    <small>
+                      {" "}
+                      ວັນສິ້ນສຸດໂດຍປະມານ:{" "}
+                      {Number.isFinite(+draft.days)
+                        ? new Date(
+                            previewTime +
+                              Math.min(365, Math.max(0, +draft.days)) *
+                                86400000,
+                          ).toLocaleString("lo-LA", { timeZoneName: "short" })
+                        : "—"}{" "}
+                      . ວັນທີຈິງຈະຖືກກຳນົດເມື່ອສ້າງກອງທຶນສຳເລັດ.{" "}
+                    </small>
+                    <Notice>
+                      {draft.policy === "0"
+                        ? t("refundPolicy")
+                        : draft.policy === "1"
+                          ? t("keepPolicy")
+                          : "ເງື່ອນໄຂນີ້ປ່ຽນບໍ່ໄດ້ຫຼັງສ້າງກອງທຶນ."}
+                    </Notice>
+                  </>
+                ) : (
                   <Notice>
-                    {draft.policy === "0"
-                      ? t("refundPolicy")
-                      : draft.policy === "1"
-                        ? t("keepPolicy")
-                        : "ເງື່ອນໄຂນີ້ປ່ຽນບໍ່ໄດ້ຫຼັງສ້າງກອງທຶນ."}
+                    {t("continuousPolicy")} ຮູບແບບນີ້ບໍ່ກຳນົດເປົ້າໝາຍ
+                    ຫຼືວັນສິ້ນສຸດ.{" "}
                   </Notice>
-                </>
-              ) : (
-                <Notice>
-                  {t("continuousPolicy")} ຮູບແບບນີ້ບໍ່ກຳນົດເປົ້າໝາຍ
-                  ຫຼືວັນສິ້ນສຸດ.{" "}
+                )}
+              </>
+            ) : null}
+            {step === 2 ? (
+              <>
+                {input(
+                  "approvers",
+                  "ທີ່ຢູ່ກະເປົາຜູ້ອະນຸມັດ (ໜຶ່ງຄົນຕໍ່ແຖວ)",
+                  "ເລືອກຜູ້ຮ່ວມອະນຸມັດ 1–10 ຄົນ ໂດຍໃຊ້ທີ່ຢູ່ກະເປົາທີ່ບໍ່ຊ້ຳກັນ.",
+                  true,
+                )}
+                {input("threshold", "ຈຳນວນຄົນທີ່ຕ້ອງອະນຸມັດ")}
+                {input("minimum", "ຈຳນວນຄົນອະນຸມັດຂັ້ນຕ່ຳຖາວອນ")}
+                <Notice
+                  title={
+                    draft.threshold === "1"
+                      ? "ການອະນຸມັດໂດຍຄົນດຽວ"
+                      : "ແນະນຳໃຫ້ມີຜູ້ອະນຸມັດ 3 ຄົນ ແລະຕ້ອງອະນຸມັດຢ່າງໜ້ອຍ 2 ຄົນ"
+                  }
+                >
+                  {" "}
+                  ການສະເໜີຍັງບໍ່ແມ່ນການອະນຸມັດ. ການປ່ຽນແປງສຳຄັນຕ້ອງລໍຖ້າ 24
+                  ຊົ່ວໂມງ. ຖ້າເສຍສິດເຂົ້າກະເປົາຈົນອະນຸມັດບໍ່ຄົບ
+                  ເງິນອາດຖືກລັອກຖາວອນ ແລະບໍ່ມີຜູ້ດູແລທີ່ກູ້ຄືນໃຫ້ໄດ້.{" "}
                 </Notice>
-              )}
-            </>
-          ) : null}
-          {step === 2 ? (
-            <>
-              {input(
-                "approvers",
-                "ທີ່ຢູ່ກະເປົາຜູ້ອະນຸມັດ (ໜຶ່ງຄົນຕໍ່ແຖວ)",
-                "ເລືອກຜູ້ຮ່ວມອະນຸມັດ 1–10 ຄົນ ໂດຍໃຊ້ທີ່ຢູ່ກະເປົາທີ່ບໍ່ຊ້ຳກັນ.",
-                true,
-              )}
-              {input("threshold", "ຈຳນວນຄົນທີ່ຕ້ອງອະນຸມັດ")}
-              {input("minimum", "ຈຳນວນຄົນອະນຸມັດຂັ້ນຕ່ຳຖາວອນ")}
-              <Notice
-                title={
-                  draft.threshold === "1"
-                    ? "ການອະນຸມັດໂດຍຄົນດຽວ"
-                    : "ແນະນຳໃຫ້ມີຜູ້ອະນຸມັດ 3 ຄົນ ແລະຕ້ອງອະນຸມັດຢ່າງໜ້ອຍ 2 ຄົນ"
-                }
-              >
-                {" "}
-                ການສະເໜີຍັງບໍ່ແມ່ນການອະນຸມັດ. ການປ່ຽນແປງສຳຄັນຕ້ອງລໍຖ້າ 24
-                ຊົ່ວໂມງ. ຖ້າເສຍສິດເຂົ້າກະເປົາຈົນອະນຸມັດບໍ່ຄົບ
-                ເງິນອາດຖືກລັອກຖາວອນ ແລະບໍ່ມີຜູ້ດູແລທີ່ກູ້ຄືນໃຫ້ໄດ້.{" "}
-              </Notice>
-            </>
-          ) : null}
-          {step === 3 ? (
-            <>
-              <SelectField
-                label="ເງື່ອນໄຂຜູ້ຮັບເງິນ (ປ່ຽນບໍ່ໄດ້)"
-                value={draft.recipientPolicy}
-                onChange={change("recipientPolicy")}
-                options={[
-                  ["0", "ເລືອກຜູ້ຮັບທີ່ມີສິດໄດ້ຕາມການອະນຸມັດ"],
-                  ["1", "ຈ່າຍໄດ້ສະເພາະຜູ້ຮັບໃນລາຍຊື່ທີ່ອະນຸມັດ"],
-                ]}
-              />
-              {draft.recipientPolicy === "1"
-                ? input(
-                    "recipients",
-                    "ລາຍຊື່ຜູ້ຮັບເບື້ອງຕົ້ນ",
-                    "ໜຶ່ງກະເປົາຕໍ່ແຖວ. ສາມາດເວັ້ນວ່າງໄວ້ໄດ້; ການເພີ່ມພາຍຫຼັງຕ້ອງຜ່ານການອະນຸມັດ ແລະລໍຖ້າຕາມກຳນົດ.",
-                    true,
-                  )
-                : null}
-              <Notice>
-                {" "}
-                ທຸກການຈ່າຍເງິນຕ້ອງຜ່ານການອະນຸມັດ. ຖ້າເລືອກຈຳກັດລາຍຊື່
-                ຈະປ່ຽນເປັນແບບບໍ່ຈຳກັດບໍ່ໄດ້.
-                ຍັງບໍ່ຮອງຮັບການໂອນລະຫວ່າງກອງທຶນ.{" "}
-              </Notice>
-            </>
-          ) : null}
-          {step === 4 ? (
-            <>
-              <Notice title="ເງື່ອນໄຂການເງິນຖາວອນ">
-                {" "}
-                ເປົ້າໝາຍ ໄລຍະເວລາ ນະໂຍບາຍຄືນເງິນ ຈຳນວນອະນຸມັດຂັ້ນຕ່ຳ
-                ແລະເງື່ອນໄຂຜູ້ຮັບ ປ່ຽນບໍ່ໄດ້ພາຍຫຼັງ.{" "}
-              </Notice>
-              {review ? (
-                <dl className="data-list">
-                  <dt> ຊື່ກອງທຶນ / ຜູ້ຈັດການ </dt>
-                  <dd>
-                    {draft.title}
-                    <code className="hash">{review[0].manager}</code>
-                  </dd>
-                  <dt> ລະດົມທຶນ </dt>
-                  <dd>
-                    {draft.mode === "0"
-                      ? `${draft.goal} OFL · ${draft.days} ວັນ · ${draft.policy === "0" ? "ຄືນເງິນ" : "ເກັບເງິນໄວ້"}`
-                      : "ຕໍ່ເນື່ອງ · ບໍ່ມີການຄືນເງິນອັດຕະໂນມັດ"}
-                  </dd>
-                  <dt> ການອະນຸມັດ </dt>
-                  <dd>
-                    {draft.threshold}/{review[1].length} ; ຂັ້ນຕ່ຳ{" "}
-                    {draft.minimum}
-                  </dd>
-                  <dt> ຜູ້ອະນຸມັດ </dt>
-                  <dd>
-                    {review[1].map((a) => (
-                      <code className="hash" key={a}>
-                        {a}
-                      </code>
-                    ))}
-                  </dd>
-                  <dt> ຜູ້ຮັບ </dt>
-                  <dd>
-                    {draft.recipientPolicy === "0"
-                      ? "ເລືອກຜູ້ຮັບໄດ້ຕາມການອະນຸມັດ"
-                      : review[2].join("\n") || "ຍັງບໍ່ມີລາຍຊື່ຜູ້ຮັບ"}
-                  </dd>
-                  <dt>ຈຸດປະສົງ ແລະເງື່ອນໄຂ</dt>
-                  <dd className="whitespace-pre-wrap">{draft.terms}</dd>
-                </dl>
-              ) : (
-                <Notice title="ກະລຸນາກວດສອບຂໍ້ມູນ">{reviewError}</Notice>
-              )}
-              <Disclosure title="ຂໍ້ມູນອ້າງອີງ">
-                <code>{review?.[0].termsHash}</code>
-                <p>
-                  {d.chainId} · {d.version}
-                </p>
-                <code>{d.openFundAddress}</code>
-              </Disclosure>
-              {!connection.address || connection.chainId !== d.chainId ? (
-                <Connect chainId={d.chainId} />
-              ) : null}
-            </>
-          ) : null}
-        </FieldGroup>
-        <div className="pt-5">
-          <ErrorNotice error={error} />
-        </div>
+              </>
+            ) : null}
+            {step === 3 ? (
+              <>
+                <SelectField
+                  label="ເງື່ອນໄຂຜູ້ຮັບເງິນ (ປ່ຽນບໍ່ໄດ້)"
+                  value={draft.recipientPolicy}
+                  onChange={change("recipientPolicy")}
+                  options={[
+                    ["0", "ເລືອກຜູ້ຮັບທີ່ມີສິດໄດ້ຕາມການອະນຸມັດ"],
+                    ["1", "ຈ່າຍໄດ້ສະເພາະຜູ້ຮັບໃນລາຍຊື່ທີ່ອະນຸມັດ"],
+                  ]}
+                />
+                {draft.recipientPolicy === "1"
+                  ? input(
+                      "recipients",
+                      "ລາຍຊື່ຜູ້ຮັບເບື້ອງຕົ້ນ",
+                      "ໜຶ່ງກະເປົາຕໍ່ແຖວ. ສາມາດເວັ້ນວ່າງໄວ້ໄດ້; ການເພີ່ມພາຍຫຼັງຕ້ອງຜ່ານການອະນຸມັດ ແລະລໍຖ້າຕາມກຳນົດ.",
+                      true,
+                    )
+                  : null}
+                <Notice>
+                  {" "}
+                  ທຸກການຈ່າຍເງິນຕ້ອງຜ່ານການອະນຸມັດ. ຖ້າເລືອກຈຳກັດລາຍຊື່
+                  ຈະປ່ຽນເປັນແບບບໍ່ຈຳກັດບໍ່ໄດ້.
+                  ຍັງບໍ່ຮອງຮັບການໂອນລະຫວ່າງກອງທຶນ.{" "}
+                </Notice>
+              </>
+            ) : null}
+            {step === 4 ? (
+              <>
+                <Notice title="ເງື່ອນໄຂການເງິນຖາວອນ">
+                  {" "}
+                  ເປົ້າໝາຍ ໄລຍະເວລາ ນະໂຍບາຍຄືນເງິນ ຈຳນວນອະນຸມັດຂັ້ນຕ່ຳ
+                  ແລະເງື່ອນໄຂຜູ້ຮັບ ປ່ຽນບໍ່ໄດ້ພາຍຫຼັງ.{" "}
+                </Notice>
+                {review ? (
+                  <dl className="data-list">
+                    <dt> ຊື່ກອງທຶນ / ຜູ້ຈັດການ </dt>
+                    <dd>
+                      {draft.title}
+                      <code className="hash">{review[0].manager}</code>
+                    </dd>
+                    <dt> ລະດົມທຶນ </dt>
+                    <dd>
+                      {draft.mode === "0"
+                        ? `${draft.goal} OFL · ${draft.days} ວັນ · ${draft.policy === "0" ? "ຄືນເງິນ" : "ເກັບເງິນໄວ້"}`
+                        : "ຕໍ່ເນື່ອງ · ບໍ່ມີການຄືນເງິນອັດຕະໂນມັດ"}
+                    </dd>
+                    <dt> ການອະນຸມັດ </dt>
+                    <dd>
+                      {draft.threshold}/{review[1].length} ; ຂັ້ນຕ່ຳ{" "}
+                      {draft.minimum}
+                    </dd>
+                    <dt> ຜູ້ອະນຸມັດ </dt>
+                    <dd>
+                      {review[1].map((a) => (
+                        <code className="hash" key={a}>
+                          {a}
+                        </code>
+                      ))}
+                    </dd>
+                    <dt> ຜູ້ຮັບ </dt>
+                    <dd>
+                      {draft.recipientPolicy === "0"
+                        ? "ເລືອກຜູ້ຮັບໄດ້ຕາມການອະນຸມັດ"
+                        : review[2].join("\n") || "ຍັງບໍ່ມີລາຍຊື່ຜູ້ຮັບ"}
+                    </dd>
+                    <dt>ຈຸດປະສົງ ແລະເງື່ອນໄຂ</dt>
+                    <dd className="whitespace-pre-wrap">{draft.terms}</dd>
+                  </dl>
+                ) : (
+                  <Notice title="ກະລຸນາກວດສອບຂໍ້ມູນ">{reviewError}</Notice>
+                )}
+                <Disclosure title="ຂໍ້ມູນອ້າງອີງ">
+                  <code>{review?.[0].termsHash}</code>
+                  <p>
+                    {d.chainId} · {d.version}
+                  </p>
+                  <code>{d.openFundAddress}</code>
+                </Disclosure>
+                {!connection.address || connection.chainId !== d.chainId ? (
+                  <Connect chainId={d.chainId} />
+                ) : null}
+              </>
+            ) : null}
+          </FieldGroup>
+        </fieldset>
         <div className="flex items-center justify-between gap-3 pt-6">
           <Button
             variant="outline"
             disabled={step === 0 || tx.busy}
-            onClick={() => setStep((v) => v - 1)}
+            onClick={() => {
+              setError(undefined);
+              setStep((v) => v - 1);
+            }}
           >
             {t("back")}
           </Button>

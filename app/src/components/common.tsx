@@ -20,7 +20,7 @@ import {
   CardDescription,
   CardContent,
 } from "./ui/card";
-import { Field, FieldLabel, FieldDescription } from "./ui/field";
+import { Field, FieldLabel, FieldDescription, FieldError } from "./ui/field";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { NativeSelect, NativeSelectOption } from "./ui/native-select";
@@ -143,6 +143,8 @@ export function TextField({
   required = false,
   type = "text",
   inputMode,
+  id: providedId,
+  error,
 }: {
   label: string;
   value: string;
@@ -152,15 +154,23 @@ export function TextField({
   required?: boolean;
   type?: string;
   inputMode?: "decimal" | "numeric";
+  id?: string;
+  error?: string;
 }) {
-  const id = useId();
+  const generatedId = useId();
+  const id = providedId ?? generatedId;
+  const describedBy =
+    [help ? `${id}-help` : "", error ? `${id}-error` : ""]
+      .filter(Boolean)
+      .join(" ") || undefined;
   return (
-    <Field>
+    <Field data-invalid={!!error}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       {multiline ? (
         <Textarea
           id={id}
-          aria-describedby={help ? `${id}-help` : undefined}
+          aria-describedby={describedBy}
+          aria-invalid={!!error}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           required={required}
@@ -168,7 +178,8 @@ export function TextField({
       ) : (
         <Input
           id={id}
-          aria-describedby={help ? `${id}-help` : undefined}
+          aria-describedby={describedBy}
+          aria-invalid={!!error}
           type={type}
           inputMode={inputMode}
           autoComplete={type === "password" ? "off" : undefined}
@@ -177,6 +188,7 @@ export function TextField({
           required={required}
         />
       )}{" "}
+      {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
       {help ? (
         <FieldDescription id={`${id}-help`}>{help}</FieldDescription>
       ) : null}
@@ -188,18 +200,28 @@ export function SelectField({
   value,
   onChange,
   options,
+  disabled,
+  error,
+  id: providedId,
 }: {
   label: string;
   value: string;
   onChange: (s: string) => void;
   options: readonly (readonly [string, string])[];
+  disabled?: boolean;
+  error?: string;
+  id?: string;
 }) {
-  const id = useId();
+  const generatedId = useId();
+  const id = providedId ?? generatedId;
   return (
-    <Field>
+    <Field data-invalid={!!error} data-disabled={disabled}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <NativeSelect
         id={id}
+        disabled={disabled}
+        aria-invalid={!!error}
+        aria-describedby={error ? `${id}-error` : undefined}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       >
@@ -209,6 +231,7 @@ export function SelectField({
           </NativeSelectOption>
         ))}
       </NativeSelect>
+      {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
     </Field>
   );
 }

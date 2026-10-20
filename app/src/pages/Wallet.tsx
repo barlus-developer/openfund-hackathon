@@ -1,8 +1,15 @@
 import { Disclosure, PageHeader, Stat } from "@/components/patterns";
+import { useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { useConnection, useWalletClient } from "wagmi";
 import { encodeFunctionData, formatUnits, getAddress } from "viem";
-import { defaultDeployment, clientFor, chainFor } from "@/web3/deployments";
+import {
+  defaultDeployment,
+  resolveDeployment,
+  clientFor,
+  chainFor,
+  type Deployment,
+} from "@/web3/deployments";
 import { useBalances } from "@/web3/reads";
 import { tokenAbi } from "@/web3/generated/OFLToken";
 import { useTransaction } from "@/hooks/useTransaction";
@@ -21,15 +28,18 @@ import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { useLanguage } from "@/app/i18n";
 export function WalletPage() {
-  return defaultDeployment ? (
-    <WalletContent />
+  const [params] = useSearchParams();
+  const d =
+    resolveDeployment(params.get("deployment") ?? undefined) ??
+    defaultDeployment;
+  return d ? (
+    <WalletContent key={d.version} d={d} />
   ) : (
     <EmptyState description="ລະບົບຍັງບໍ່ພ້ອມໃຊ້ງານ. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ." />
   );
 }
-function WalletContent() {
-  const d = defaultDeployment!,
-    c = useConnection(),
+function WalletContent({ d }: { d: Deployment }) {
+  const c = useConnection(),
     balances = useBalances(d, c.address),
     wallet = useWalletClient(),
     tx = useTransaction(d),
@@ -67,7 +77,7 @@ function WalletContent() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       <PageHeader
         title={t("wallet")}
-        action={c.address ? <Connect /> : undefined}
+        action={c.address ? <Connect chainId={d.chainId} /> : undefined}
       />
       <Notice title="OFL ທົດລອງ">
         OFL ບໍ່ມີເງິນກີບຄ້ຳປະກັນ ແລະບໍ່ສາມາດແລກເປັນເງິນກີບໄດ້.
@@ -76,7 +86,7 @@ function WalletContent() {
         <EmptyState
           title="ເຊື່ອມກະເປົາຂອງເຈົ້າ"
           description="ເບິ່ງຍອດ OFL ຮັບ ແລະໂອນເງິນ."
-          action={<Connect />}
+          action={<Connect chainId={d.chainId} />}
         />
       ) : (
         <>

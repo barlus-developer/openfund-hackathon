@@ -5,7 +5,7 @@ import {
   useDisconnect,
   useSwitchChain,
 } from "wagmi";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { LogOut, Wallet, ArrowLeftRight } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -25,13 +25,20 @@ export function Connect({
     disconnect = useDisconnect(),
     sw = useSwitchChain(),
     connectors = useConnectors();
+  const { pathname, search } = useLocation();
+  const version =
+    pathname.match(/\/funds\/([^/]+)\/\d+/)?.[1] ??
+    new URLSearchParams(search).get("deployment");
+  const walletPath =
+    (pathname.startsWith("/manager") ? "/manager/wallet" : "/wallet") +
+    (version ? `?deployment=${encodeURIComponent(version)}` : "");
   const { t } = useLanguage();
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-2">
       {connection.isConnected ? (
         <>
           <Link
-            to="/wallet"
+            to={walletPath}
             aria-label={`ກະເປົາ ${shorten(connection.address)}`}
             className={buttonVariants({
               variant: "outline",

@@ -32,7 +32,7 @@ export function FundOverview() {
       >
         <p className="whitespace-pre-wrap text-base leading-8">{f.summary}</p>
       </section>
-      <div className="flex min-w-0 flex-col gap-8 lg:col-start-2 lg:row-start-1 lg:row-span-2">
+      <div className="flex min-w-0 flex-col gap-8 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-8">
         <Panel title="ຍອດສະໜັບສະໜູນ">
           <div className="flex flex-col gap-4">
             <FundProgress row={row} showLabel={false} />
@@ -98,10 +98,7 @@ export function FundOverview() {
             ))}
           </div>
         </section>
-        <section aria-labelledby="fund-terms" className="flex flex-col gap-4">
-          <h2 id="fund-terms" className="text-lg font-semibold">
-            ເງື່ອນໄຂກອງທຶນ
-          </h2>
+        <Disclosure title="ເງື່ອນໄຂກອງທຶນ ແລະຜູ້ຮັບຜິດຊອບ">
           <dl className="data-list">
             <dt>ຜູ້ຮັບເງິນ</dt>
             <dd>
@@ -131,7 +128,7 @@ export function FundOverview() {
             ເງື່ອນໄຂການເງິນປ່ຽນບໍ່ໄດ້. ກະລຸນາກວດສອບຜູ້ຈັດການ;
             ຂໍ້ມູນສາທາລະນະບໍ່ໄດ້ຮັບຮອງການນຳໃຊ້ເງິນ.
           </p>
-        </section>
+        </Disclosure>
         <Disclosure title="ຂໍ້ມູນອ້າງອີງກອງທຶນ">
           <dl className="data-list">
             <dt>ຜູ້ສ້າງ</dt>

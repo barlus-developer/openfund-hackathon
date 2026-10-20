@@ -53,3 +53,6 @@ export async function verifyDeployment(d: Deployment) {
 }
 export const fundPath = (d: Deployment, id: bigint | string) =>
   `/funds/${d.version}/${id}`;
+
+export const managerFundPath = (d: Deployment, id: bigint | string) =>
+  `/manager/funds/${d.version}/${id}`;

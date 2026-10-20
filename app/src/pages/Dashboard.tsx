@@ -1,18 +1,21 @@
-import { PageHeader, RouteNavigation } from "@/components/patterns";
+import { PageHeader, RouteNavigation, Stat } from "@/components/patterns";
 import { actionLabels, proposalStatusLabels } from "@/app/labels";
 import { useState } from "react";
-import { useParams, Link, Navigate } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useConnection } from "wagmi";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useQueries, keepPreviousData } from "@tanstack/react-query";
 import { encodeFunctionData } from "viem";
 import {
   defaultDeployment,
   fundPath,
+  managerFundPath,
+  deployments,
+  resolveDeployment,
   clientFor,
   type Deployment,
 } from "@/web3/deployments";
 import { useActivity } from "@/hooks/useActivity";
-import { readFund, useProposal } from "@/web3/reads";
+import { readFund } from "@/web3/reads";
 import { openFundAbi } from "@/web3/generated/OpenFund";
 import { useTransaction } from "@/hooks/useTransaction";
 import { Connect } from "@/features/wallet/Connect";
@@ -24,18 +27,26 @@ import {
   ErrorNotice,
   Loading,
   TxFeedback,
+  SelectField,
 } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/app/i18n";
 import { formatOfl } from "@/lib/amount";
 import type { Address } from "viem";
-export function Dashboard() {
+export function Dashboard({
+  section = "funds",
+  manager = false,
+}: {
+  section?: string;
+  manager?: boolean;
+}) {
   const c = useConnection();
-  const { section = "" } = useParams();
-  if (!["funds", "donations", "approvals", "refunds"].includes(section))
-    return <Navigate to="/dashboard/funds" replace />;
-  if (!defaultDeployment)
+  const [params, setParams] = useSearchParams();
+  const d =
+    resolveDeployment(params.get("deployment") ?? undefined) ??
+    defaultDeployment;
+  if (!d)
     return (
       <EmptyState description="ລະບົບຍັງບໍ່ພ້ອມໃຊ້ງານ. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ." />
     );
@@ -43,47 +54,86 @@ export function Dashboard() {
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader
         title={
-          section === "donations"
-            ? "ການສະໜັບສະໜູນຂອງຂ້ອຍ"
-            : section === "approvals"
-              ? "ລໍຖ້າອະນຸມັດ"
-              : section === "refunds"
-                ? "ຮັບເງິນຄືນ"
-                : "ກອງທຶນຂອງຂ້ອຍ"
+          section === "overview"
+            ? "ພາບລວມກອງທຶນ"
+            : section === "transactions"
+              ? "ປະຫວັດກອງທຶນຂອງຂ້ອຍ"
+              : section === "donations"
+                ? "ການສະໜັບສະໜູນຂອງຂ້ອຍ"
+                : section === "approvals"
+                  ? "ລໍຖ້າອະນຸມັດ"
+                  : section === "refunds"
+                    ? "ຮັບເງິນຄືນ"
+                    : "ກອງທຶນຂອງຂ້ອຍ"
         }
         action={
-          c.address && (!section || section === "funds") ? (
-            <ActionLink to="/funds/create">ສ້າງກອງທຶນ</ActionLink>
+          !manager && c.address ? (
+            <Connect chainId={d.chainId} compact />
           ) : undefined
         }
       />
-      <RouteNavigation
-        label="ເມນູກອງທຶນຂອງຂ້ອຍ"
-        items={["funds", "donations", "approvals", "refunds"].map((tab, i) => ({
-          to: `/dashboard/${tab}`,
-          label: ["ກອງທຶນຂອງຂ້ອຍ", "ການສະໜັບສະໜູນ", "ການອະນຸມັດ", "ຮັບເງິນຄືນ"][
-            i
-          ],
-        }))}
-      />
+      {!manager ? (
+        <RouteNavigation
+          label="ການສະໜັບສະໜູນຂອງຂ້ອຍ"
+          items={[
+            {
+              to: `/donations?deployment=${encodeURIComponent(d.version)}`,
+              label: "ການສະໜັບສະໜູນ",
+              end: true,
+            },
+            {
+              to: `/donations/refunds?deployment=${encodeURIComponent(d.version)}`,
+              label: "ຮັບເງິນຄືນ",
+            },
+          ]}
+        />
+      ) : null}
+      {deployments.length > 1 ? (
+        <div className="max-w-sm">
+          <SelectField
+            label="ເຄືອຂ່າຍກອງທຶນ"
+            value={d.version}
+            onChange={(value) => setParams({ deployment: value })}
+            options={deployments.map((d) => [
+              d.version,
+              `${d.chainId} · ${d.version}`,
+            ])}
+          />
+        </div>
+      ) : null}
       {c.address ? (
         <WalletDashboard
-          key={c.address}
-          d={defaultDeployment}
+          key={`${c.address}:${d.version}`}
+          d={d}
+          section={section}
+          manager={manager}
           address={c.address}
         />
       ) : (
         <EmptyState
           title="ເຊື່ອມກະເປົາຂອງເຈົ້າ"
-          description="ເບິ່ງກອງທຶນ ແລະການສະໜັບສະໜູນຂອງເຈົ້າ."
-          action={<Connect />}
+          description={
+            manager
+              ? "ເຊື່ອມກະເປົາຜູ້ຈັດການ ຫຼືຜູ້ອະນຸມັດເພື່ອເບິ່ງກອງທຶນຂອງເຈົ້າ."
+              : "ເຊື່ອມກະເປົາທີ່ໃຊ້ສະໜັບສະໜູນເພື່ອເບິ່ງປະຫວັດ ແລະຮັບເງິນຄືນ."
+          }
+          action={<Connect chainId={d.chainId} />}
         />
       )}
     </div>
   );
 }
-function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
-  const { section = "" } = useParams();
+function WalletDashboard({
+  d,
+  address,
+  section,
+  manager,
+}: {
+  d: Deployment;
+  address: Address;
+  section: string;
+  manager: boolean;
+}) {
   const q = useActivity(d);
   const [limit, setLimit] = useState(12);
   const same = (v: unknown) =>
@@ -97,12 +147,15 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
         (same(e.args.creator) || same(e.args.manager))) ||
       (e.eventName === "GovernanceChanged" && same(e.args.manager)) ||
       (e.eventName === "ApproverChanged" && same(e.args.approver)) ||
-      (e.eventName === "DonationReceived" && same(e.args.donor)),
+      (!manager && e.eventName === "DonationReceived" && same(e.args.donor)),
   );
-  const ids = [...new Set(relevant.map((e) => e.args.fundId as bigint))];
+  const ids = [...new Set(relevant.map((e) => e.args.fundId as bigint))].sort(
+    (a, b) => (a > b ? -1 : a < b ? 1 : 0),
+  );
   const discovered = ids.slice(0, limit);
   const funds = useQuery({
     queryKey: ["wallet-discovery", d.version, address, discovered.map(String)],
+    enabled: manager,
     placeholderData: keepPreviousData,
     refetchInterval: 10000,
     queryFn: async ({ signal }) => {
@@ -119,9 +172,6 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
     },
   });
   const rows = funds.data || [];
-  const myFunds = rows.filter(
-    (r) => same(r.fund.creator) || same(r.fund.manager),
-  );
   const approverFunds = rows.filter((r) => r.approvers.some(same));
   const proposalIds = q.events
     .filter(
@@ -132,35 +182,107 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
     .map((e) => e.args.proposalId as bigint)
     .reverse();
   const refundIds = [...new Set(donations.map((e) => e.args.fundId as bigint))];
-  if (q.isLoading || funds.isLoading) return <Loading />;
+  const managed = rows.filter(
+    (r) =>
+      same(r.fund.creator) || same(r.fund.manager) || r.approvers.some(same),
+  );
+  const managedIds = new Set(managed.map((r) => String(r.id)));
+  const transactions = q.events
+    .filter((e) => managedIds.has(String(e.args.fundId)))
+    .slice()
+    .reverse();
+  if (q.isLoading || (manager && funds.isLoading)) return <Loading />;
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <ScanControls q={q} />
-      <ErrorNotice error={funds.error} />
+      <ErrorNotice error={manager ? funds.error : undefined} />
       {Math.max(
         ids.length,
         proposalIds.length,
         refundIds.length,
         donations.length,
+        transactions.length,
       ) > limit ? (
         <Button variant="outline" onClick={() => setLimit((n) => n + 12)}>
           {" "}
           ໂຫຼດເພີ່ມ 12 ລາຍການ{" "}
         </Button>
       ) : null}
-      {section === "" || section === "funds" ? (
+      {section === "overview" && !funds.error && !q.error ? (
+        <>
+          <div className="grid grid-cols-2 gap-6 border-y py-5 lg:grid-cols-4">
+            <Stat label="ກອງທຶນທີ່ດູແລ" value={managed.length} />
+            <Stat
+              label="ລະດົມທຶນແລ້ວ"
+              value={
+                <>
+                  {formatOfl(
+                    managed.reduce((n, r) => n + r.fund.totalRaised, 0n),
+                  )}{" "}
+                  <small>OFL</small>
+                </>
+              }
+            />
+            <Stat
+              label="ຍອດຄົງເຫຼືອ"
+              value={
+                <>
+                  {formatOfl(managed.reduce((n, r) => n + r.fund.balance, 0n))}{" "}
+                  <small>OFL</small>
+                </>
+              }
+            />
+            <Stat
+              label="ຈ່າຍແລ້ວ"
+              value={
+                <>
+                  {formatOfl(
+                    managed.reduce((n, r) => n + r.fund.totalWithdrawn, 0n),
+                  )}{" "}
+                  <small>OFL</small>
+                </>
+              }
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            ສະຫຼຸບຈາກກອງທຶນທີ່ໂຫຼດແລ້ວ {managed.length} ກອງທຶນ ·
+            ລວມກອງທຶນທີ່ເຈົ້າເປັນຜູ້ອະນຸມັດ.
+          </p>
+        </>
+      ) : null}
+      {manager && funds.error ? (
+        <Button
+          variant="outline"
+          disabled={funds.isFetching}
+          onClick={() => funds.refetch()}
+        >
+          ລອງໂຫຼດກອງທຶນໃໝ່
+        </Button>
+      ) : null}
+      {manager &&
+      !funds.error &&
+      !q.error &&
+      ["overview", "funds"].includes(section) ? (
         <section aria-label="ກອງທຶນທີ່ສ້າງ ຫຼືກຳລັງດູແລ">
-          {myFunds.length ? (
+          {managed.length ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {myFunds.map((r) => (
-                <FundCard key={r.id.toString()} row={r} d={d} />
+              {managed.map((r) => (
+                <FundCard
+                  key={r.id.toString()}
+                  row={r}
+                  d={d}
+                  manager={manager}
+                />
               ))}
             </div>
           ) : (
             <EmptyState
               title="ຍັງບໍ່ມີກອງທຶນຂອງເຈົ້າ"
               action={
-                <ActionLink to="/funds/create" outline>
+                <ActionLink
+                  to={`/manager/create?deployment=${encodeURIComponent(d.version)}`}
+                  outline
+                >
                   ສ້າງກອງທຶນ
                 </ActionLink>
               }
@@ -168,7 +290,27 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
           )}
         </section>
       ) : null}
-      {section === "donations" ? (
+      {section === "transactions" && !q.error && !funds.error ? (
+        <section aria-label="ປະຫວັດກອງທຶນຂອງຂ້ອຍ">
+          {transactions.length ? (
+            transactions
+              .slice(0, limit)
+              .map((e) => (
+                <EventRow
+                  key={`${e.transactionHash}:${e.logIndex}`}
+                  event={e}
+                  d={d}
+                />
+              ))
+          ) : (
+            <EmptyState
+              title="ຍັງບໍ່ມີລາຍການ"
+              description="ລາຍການຮັບ ແລະຈ່າຍເງິນຂອງກອງທຶນທີ່ເຈົ້າດູແລຈະສະແດງຢູ່ນີ້."
+            />
+          )}
+        </section>
+      ) : null}
+      {section === "donations" && !q.error ? (
         <section aria-label="ປະຫວັດການສະໜັບສະໜູນຂອງຂ້ອຍ">
           {donations.length ? (
             donations
@@ -190,18 +332,12 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
           )}
         </section>
       ) : null}
-      {section === "approvals" ? (
+      {section === "approvals" && !q.error && !funds.error ? (
         <section aria-label="ລາຍການທີ່ລໍຖ້າຂ້ອຍອະນຸມັດ">
-          {proposalIds.length ? (
-            proposalIds
-              .slice(0, limit)
-              .map((id) => <ApprovalTask key={id.toString()} id={id} d={d} />)
-          ) : (
-            <EmptyState description="ຍັງບໍ່ພົບລາຍການທີ່ຕ້ອງອະນຸມັດໃນຂໍ້ມູນທີ່ໂຫຼດ." />
-          )}
+          <ApprovalTasks d={d} ids={proposalIds.slice(0, limit)} />
         </section>
       ) : null}
-      {section === "refunds" ? (
+      {section === "refunds" && !q.error ? (
         <section aria-label="ຮັບເງິນສະໜັບສະໜູນຄືນ">
           {refundIds.length ? (
             refundIds
@@ -222,24 +358,53 @@ function WalletDashboard({ d, address }: { d: Deployment; address: Address }) {
     </div>
   );
 }
-function ApprovalTask({ d, id }: { d: Deployment; id: bigint }) {
-  const q = useProposal(d, id);
-  if (q.error) return <ErrorNotice error={q.error} />;
-  if (!q.data) return <Loading />;
-  const [p, s] = q.data;
-  if (s > 2) return null;
+function ApprovalTasks({ d, ids }: { d: Deployment; ids: bigint[] }) {
+  const results = useQueries({
+    queries: ids.map((id) => ({
+      queryKey: ["proposal", d.version, id.toString()],
+      queryFn: () =>
+        clientFor(d).readContract({
+          address: d.openFundAddress,
+          abi: openFundAbi,
+          functionName: "getProposal",
+          args: [id],
+        }),
+      refetchInterval: 10000,
+    })),
+  });
+  const pending = results.flatMap((q, i) =>
+    q.data && q.data[1] <= 2 ? [{ id: ids[i], data: q.data }] : [],
+  );
   return (
-    <Link
-      className="flex min-w-0 flex-col justify-between gap-4 border-b py-5 last:border-0 sm:flex-row"
-      to={fundPath(d, p.fundId) + `/proposals/${id}`}
-    >
-      <strong>
-        #{id.toString()} · {actionLabels[p.action.kind]}
-      </strong>
-      <Badge variant="outline">
-        {proposalStatusLabels[s]} · {p.approvals} ການອະນຸມັດ{" "}
-      </Badge>
-    </Link>
+    <div className="flex flex-col gap-4">
+      {results.some((q) => q.isLoading) ? <Loading /> : null}
+      {results.map((q, i) =>
+        q.error ? <ErrorNotice key={String(ids[i])} error={q.error} /> : null,
+      )}
+      {pending.map(({ id, data: [p, status] }) => (
+        <Link
+          key={String(id)}
+          className="flex min-w-0 flex-col justify-between gap-4 border-b py-5 last:border-0 sm:flex-row"
+          to={managerFundPath(d, p.fundId) + `/proposals/${id}`}
+        >
+          <div>
+            <strong>
+              #{String(id)} · {actionLabels[p.action.kind]}
+            </strong>
+            <p className="text-sm text-muted-foreground">{p.action.purpose}</p>
+          </div>
+          <Badge variant="outline">
+            {proposalStatusLabels[status]} · {p.approvals} ການອະນຸມັດ
+          </Badge>
+        </Link>
+      ))}
+      {!pending.length && results.every((q) => q.isSuccess) ? (
+        <EmptyState
+          title="ບໍ່ມີລາຍການລໍຖ້າອະນຸມັດ"
+          description="ບໍ່ພົບຂໍ້ສະເໜີທີ່ຕ້ອງດຳເນີນການໃນຂໍ້ມູນທີ່ໂຫຼດແລ້ວ."
+        />
+      ) : null}
+    </div>
   );
 }
 function RefundTask({
@@ -283,6 +448,7 @@ function RefundTask({
         </Link>
         <p> ຄືນ 100% ໄປກະເປົາເດີມ · ມີຄ່າທຳນຽມເຄືອຂ່າຍ · ບໍ່ມີວັນໝົດອາຍຸ </p>
         <code className="hash">{address}</code>
+        {c.chainId !== d.chainId ? <Connect chainId={d.chainId} /> : null}
         <TxFeedback state={tx.state} d={d} />
       </div>
       <Button

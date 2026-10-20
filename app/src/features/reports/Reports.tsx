@@ -26,7 +26,7 @@ import { useLanguage } from "@/app/i18n";
 import type { Activity } from "@/web3/events";
 import type { Deployment } from "@/web3/deployments";
 export function Reports() {
-  const { d, row } = useFundContext(),
+  const { d, row, manager: management } = useFundContext(),
     q = useActivity(d),
     c = useConnection(),
     tx = useTransaction(d),
@@ -95,7 +95,7 @@ export function Reports() {
           ) : null}
         </div>
       </Panel>
-      {manager ? (
+      {management && manager ? (
         <Disclosure title="ເພີ່ມລາຍງານໃໝ່" defaultOpen={!reports.length}>
           <FieldGroup>
             <Notice title="ປົກປ້ອງຜູ້ຮັບການຊ່ວຍເຫຼືອ">
@@ -137,14 +137,14 @@ export function Reports() {
             <TxFeedback state={tx.state} d={d} />
           </FieldGroup>
         </Disclosure>
-      ) : (
+      ) : management ? (
         <Disclosure title="ສຳລັບຜູ້ຈັດການ">
           <p className="text-sm text-muted-foreground">
             ໃຊ້ກະເປົາຜູ້ຈັດການເພື່ອເຜີຍແຜ່ລາຍງານ.
           </p>
           <Connect chainId={d.chainId} />
         </Disclosure>
-      )}
+      ) : null}
     </div>
   );
 }

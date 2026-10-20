@@ -45,15 +45,15 @@
 }
 :root {
   --background: #fff;
-  --foreground: #1e293b;
+  --foreground: #202b38;
   --card: #fff;
   --popover: #fff;
   --primary: #245ed5;
   --secondary: #edf3ff;
-  --muted: #f5f7fb;
+  --muted: #f6f7f9;
   --muted-foreground: #526277;
   --destructive: #be3549;
-  --border: #e2e8f1;
+  --border: #e3e7ed;
   --input: #d9e1ec;
   --radius: 10px;
   color-scheme: light;

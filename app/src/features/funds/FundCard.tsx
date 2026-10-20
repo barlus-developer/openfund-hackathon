@@ -1,5 +1,11 @@
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  HeartPulse,
+  Users,
+  FolderHeart,
+} from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -9,9 +15,10 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatOfl } from "@/lib/amount";
-import { fundPath, type Deployment } from "@/web3/deployments";
+import { fundPath, managerFundPath, type Deployment } from "@/web3/deployments";
 import { type FundRow } from "@/web3/reads";
 import { fundStatusLabels, categoryLabel } from "@/app/labels";
 import { useLanguage } from "@/app/i18n";
@@ -68,44 +75,77 @@ export function FundProgress({
     </div>
   );
 }
-export function FundCard({ row, d }: { row: FundRow; d: Deployment }) {
+export function FundCard({
+  row,
+  d,
+  manager = false,
+}: {
+  row: FundRow;
+  d: Deployment;
+  manager?: boolean;
+}) {
   const f = row.fund;
+  const Icon = /education|ສຶກສາ/i.test(f.category)
+    ? BookOpen
+    : /health|ສຸຂະພາບ/i.test(f.category)
+      ? HeartPulse
+      : /community|ຊຸມຊົນ/i.test(f.category)
+        ? Users
+        : FolderHeart;
+  const accepts =
+    row.status === 0 || (row.status === 1 && f.config.fundingMode === 1);
   return (
-    <Link
-      to={fundPath(d, row.id)}
-      aria-label={`ເບິ່ງກອງທຶນ ${f.title}`}
-      className="group block h-full min-w-0 rounded-xl"
-    >
-      <Card className="h-full transition-colors group-hover:ring-primary/40 group-focus-visible:ring-primary">
+    <article className="min-w-0 h-full">
+      <Card className="h-full">
         <CardHeader className="gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs text-muted-foreground">
-              {categoryLabel(f.category || "Projects")}
-            </span>
+          <div className="flex items-start justify-between gap-3">
+            <Icon className="size-8 text-primary" aria-hidden="true" />
             <Badge variant="secondary">{fundStatusLabels[row.status]}</Badge>
           </div>
-          <CardTitle as="h3">{f.title}</CardTitle>
+          <span className="text-xs text-muted-foreground">
+            {categoryLabel(f.category || "Projects")}
+          </span>
+          <CardTitle as="h3">
+            <Link
+              to={manager ? managerFundPath(d, row.id) : fundPath(d, row.id)}
+              className="hover:text-primary"
+            >
+              {f.title}
+            </Link>
+          </CardTitle>
           <CardDescription className="line-clamp-2">
             {f.summary}
           </CardDescription>
         </CardHeader>
         <CardContent className="mt-auto">
-          <FundProgress row={row} />
+          <FundProgress row={row} showLabel={false} />
         </CardContent>
-        <CardFooter className="flex flex-wrap justify-between gap-3">
+        <CardFooter className="flex flex-col items-stretch gap-4">
           <span className="text-xs text-muted-foreground">
-            {f.config.fundingGoal > 0n
-              ? new Date(Number(f.config.deadline) * 1000).toLocaleDateString(
-                  "lo-LA",
-                  { day: "numeric", month: "short", year: "numeric" },
-                )
+            {f.config.deadline > 0n
+              ? `ສິ້ນສຸດ ${new Date(Number(f.config.deadline) * 1000).toLocaleDateString("lo-LA", { day: "numeric", month: "short", year: "numeric" })}`
               : "ບໍ່ມີວັນສິ້ນສຸດ"}
           </span>
-          <span className="inline-flex items-center gap-2 text-sm font-medium text-primary">
-            ເບິ່ງກອງທຶນ <ArrowRight className="size-4" aria-hidden="true" />
-          </span>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Link
+              to={manager ? managerFundPath(d, row.id) : fundPath(d, row.id)}
+              className={buttonVariants({ variant: "ghost", size: "sm" })}
+            >
+              {manager ? "ຈັດການກອງທຶນ" : "ເບິ່ງກອງທຶນ"}
+              <ArrowRight data-icon="inline-end" aria-hidden="true" />
+            </Link>
+            {!manager && accepts ? (
+              <Link
+                to={fundPath(d, row.id) + "/donate"}
+                aria-label={`ຮ່ວມສະໜັບສະໜູນ ${f.title}`}
+                className={buttonVariants({ size: "sm" })}
+              >
+                ຮ່ວມສະໜັບສະໜູນ
+              </Link>
+            ) : null}
+          </div>
         </CardFooter>
       </Card>
-    </Link>
+    </article>
   );
 }

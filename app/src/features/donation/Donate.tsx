@@ -6,16 +6,16 @@ import {
 } from "@/components/ui/input-group";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Disclosure } from "@/components/patterns";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useConnection } from "wagmi";
 import { parseEventLogs, encodeFunctionData, formatUnits } from "viem";
-import { chainFor } from "@/web3/deployments";
+import { chainFor, fundPath } from "@/web3/deployments";
 import { useFundContext } from "@/features/funds/FundLayout";
 import { useBalances } from "@/web3/reads";
 import { tokenAbi } from "@/web3/generated/OFLToken";
 import { openFundAbi } from "@/web3/generated/OpenFund";
 import { useTransaction } from "@/hooks/useTransaction";
-import { amount, ofl, formatOfl, donationData } from "@/lib/amount";
+import { amount, ofl, formatOfl, donationData, shorten } from "@/lib/amount";
 import { Spinner } from "@/components/ui/spinner";
 import { ActionLink } from "@/components/common";
 import { FieldError } from "@/components/ui/field";
@@ -31,9 +31,13 @@ export function Donate() {
     balances = useBalances(d, c.address),
     tx = useTransaction(d),
     { t } = useLanguage();
+  const receiptTitle = useRef<HTMLHeadingElement>(null);
   const [input, setInput] = useState(""),
     [error, setError] = useState<unknown>(),
     [receipt, setReceipt] = useState("");
+  useEffect(() => {
+    if (receipt) receiptTitle.current?.focus();
+  }, [receipt]);
   const accepts =
       row.status === 0 ||
       (row.status === 1 && row.fund.config.fundingMode === 1),
@@ -46,9 +50,9 @@ export function Donate() {
   }
   async function donate() {
     setError(undefined);
-    setReceipt("");
     try {
       const n = amount(input);
+      if (receipt || tx.busy) return;
       if (!accepts) throw Error("ກອງທຶນນີ້ຢຸດຮັບສະໜັບສະໜູນແລ້ວ.");
       if (row.fund.config.fundingMode === 0 && n > remaining)
         throw Error("ຈຳນວນນີ້ເກີນຍອດທີ່ກອງທຶນຍັງຕ້ອງການ.");
@@ -79,7 +83,7 @@ export function Donate() {
           "ຍັງບໍ່ພົບຫຼັກຖານການສະໜັບສະໜູນ. ກະລຸນາກວດໃບຢືນຢັນກ່ອນລອງໃໝ່.",
         );
       setReceipt(
-        `${formatOfl(event.args.amount)} OFL · ກອງທຶນ #${event.args.fundId} · ຜູ້ສະໜັບສະໜູນ ${event.args.donor}`,
+        `${formatOfl(event.args.amount)} OFL · ${row.fund.title} · ${shorten(event.args.donor)}`,
       );
     } catch (e) {
       setError(e);
@@ -93,6 +97,28 @@ export function Donate() {
         : balances.data && parsed > balances.data.ofl
           ? "ຍອດ OFL ໃນກະເປົາບໍ່ພຽງພໍ."
           : "";
+  if (receipt)
+    return (
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
+        <h2
+          ref={receiptTitle}
+          tabIndex={-1}
+          className="text-2xl font-semibold outline-none"
+        >
+          ຂອບໃຈທີ່ຮ່ວມສະໜັບສະໜູນ
+        </h2>
+        <Notice title="ໃບຢືນຢັນການສະໜັບສະໜູນ">{receipt}</Notice>
+        <TxFeedback state={tx.state} d={d} />
+        <ActionLink
+          to={`/donations?deployment=${encodeURIComponent(d.version)}`}
+        >
+          ການສະໜັບສະໜູນຂອງຂ້ອຍ
+        </ActionLink>
+        <ActionLink to={fundPath(d, row.id) + "/transactions"} outline>
+          ຕິດຕາມການໃຊ້ເງິນ
+        </ActionLink>
+      </div>
+    );
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
       <Panel title={t("donate")}>
@@ -132,7 +158,15 @@ export function Donate() {
             className="flex-wrap"
           >
             {["100", "500", "1000"].map((value) => (
-              <ToggleGroupItem key={value} value={value}>
+              <ToggleGroupItem
+                key={value}
+                value={value}
+                disabled={
+                  tx.busy ||
+                  (row.fund.config.fundingMode === 0 &&
+                    amount(value) > remaining)
+                }
+              >
                 {value} OFL
               </ToggleGroupItem>
             ))}
@@ -193,14 +227,6 @@ export function Donate() {
             </Button>
           )}
           <TxFeedback state={tx.state} d={d} />
-          {receipt ? (
-            <>
-              <Notice title="ໃບຢືນຢັນການສະໜັບສະໜູນ">{receipt}</Notice>
-              <ActionLink to="/dashboard/donations" outline>
-                ການສະໜັບສະໜູນຂອງຂ້ອຍ
-              </ActionLink>
-            </>
-          ) : null}
           <Disclosure title="ຂໍ້ມູນອ້າງອີງການໂອນ">
             <dl className="data-list">
               <dt>ກອງທຶນ</dt>

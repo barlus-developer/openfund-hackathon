@@ -14,9 +14,10 @@ import {
   type Deployment,
   defaultDeployment,
   fundPath,
+  managerFundPath,
 } from "@/web3/deployments";
 import { useFundContext } from "@/features/funds/FundLayout";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { formatOfl } from "@/lib/amount";
 import type { Activity as Event } from "@/web3/events";
 export function ScanControls({ q }: { q: ReturnType<typeof useActivity> }) {
@@ -61,6 +62,8 @@ export function ScanControls({ q }: { q: ReturnType<typeof useActivity> }) {
 }
 
 export function EventRow({ event, d }: { event: Event; d: Deployment }) {
+  const { pathname } = useLocation();
+  const management = pathname.startsWith("/manager");
   const args = event.args;
   const actor = String(
     args.donor ||
@@ -96,7 +99,11 @@ export function EventRow({ event, d }: { event: Event; d: Deployment }) {
         </div>
         {args.fundId !== undefined ? (
           <Link
-            to={fundPath(d, String(args.fundId))}
+            to={
+              management
+                ? managerFundPath(d, String(args.fundId))
+                : fundPath(d, String(args.fundId))
+            }
             className="inline-flex min-h-11 items-center self-start text-sm text-primary hover:underline"
           >
             ກອງທຶນ #{String(args.fundId)}
@@ -109,7 +116,7 @@ export function EventRow({ event, d }: { event: Event; d: Deployment }) {
           <Link
             className="inline-flex min-h-11 items-center self-start text-sm text-primary hover:underline"
             to={
-              fundPath(d, String(args.fundId)) +
+              managerFundPath(d, String(args.fundId)) +
               `/proposals/${String(args.proposalId)}`
             }
           >

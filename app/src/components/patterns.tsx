@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Accordion,
@@ -77,8 +77,9 @@ export function Disclosure({
   children: ReactNode;
   defaultOpen?: boolean;
 }) {
+  const [initialValue] = useState(() => (defaultOpen ? ["details"] : []));
   return (
-    <Accordion defaultValue={defaultOpen ? ["details"] : []}>
+    <Accordion defaultValue={initialValue}>
       <AccordionItem value="details">
         <AccordionTrigger>{title}</AccordionTrigger>
         <AccordionContent>
@@ -104,21 +105,24 @@ export function RouteNavigation({
     <div className="max-w-full min-w-0 py-1">
       <NavigationMenu aria-label={label} className="max-w-none justify-start">
         <NavigationMenuList className="flex-wrap justify-start gap-1">
-          {items.map((item) => (
-            <NavigationMenuItem key={item.to}>
-              <NavigationMenuLink
-                active={
-                  item.end
-                    ? pathname === item.to
-                    : pathname === item.to || pathname.startsWith(item.to + "/")
-                }
-                render={<Link to={item.to} onClick={onNavigate} />}
-                className="min-h-11 whitespace-nowrap px-3 py-3"
-              >
-                {item.label}
-              </NavigationMenuLink>
-            </NavigationMenuItem>
-          ))}
+          {items.map((item) => {
+            const target = item.to.split("?")[0];
+            return (
+              <NavigationMenuItem key={item.to}>
+                <NavigationMenuLink
+                  active={
+                    item.end
+                      ? pathname === target
+                      : pathname === target || pathname.startsWith(target + "/")
+                  }
+                  render={<Link to={item.to} onClick={onNavigate} />}
+                  className="min-h-11 whitespace-nowrap px-3 py-3"
+                >
+                  {item.label}
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+            );
+          })}
         </NavigationMenuList>
       </NavigationMenu>
     </div>

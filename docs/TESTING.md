@@ -5,13 +5,13 @@ This records development checks actually executed in this repository; it is not 
 | Command                  | Result                                                                       |
 | ------------------------ | ---------------------------------------------------------------------------- |
 | `npm run contracts:test` | 33 tests passed: 28 deterministic/fuzz cases plus 5 stateful invariants      |
-| `npm test`               | 63 client tests passed across 11 files                                       |
+| `npm test`               | 65 client tests passed across 11 files                                       |
 | `npm run test:scripts`   | 8 configuration/deployment cases passed (also executed directly with Node)   |
 | `npm run typecheck`      | Strict TypeScript passed                                                     |
 | `npm run lint`           | ESLint passed                                                                |
 | `npm run build`          | Vite production build passed                                                 |
 | `npm run local:verify`   | Receipt/runtime importer check plus 14 mined transactions; snapshot restored |
-| `npm run e2e`            | 3 Chromium browser tests passed against seeded Anvil                         |
+| `npm run e2e`            | 4 Chromium browser tests passed against seeded Anvil                         |
 | `npm audit`              | Zero known dependency advisories after compatible uuid override              |
 
 Contract fuzzing runs 256 amount cases. Stateful invariants run 128 sequences × 64 calls per invariant (8,192 calls), across three funds, multiple donors, time warps, governance, payouts, refunds and closure. Assertions cover per-fund/global accounting, token solvency, double execution/refunds, cross-fund spending, unauthorized withdrawal and donations outside funding states.
@@ -24,7 +24,7 @@ Configuration tests cover empty defaults, malformed URLs, safe error messages, e
 
 Deployment utility tests reject wrong-chain/failed-create/unprotected/mismatched-runtime/reorg/underconfirmed imports and prevent version repointing. The read-only importer inspection was also run against the actual Anvil creation receipt, both compiled runtimes and protected registration. No live external RPC deployment or third-party IPFS upload was performed without user endpoints/capabilities.
 
-Browser tests use `app/e2e.html` with an injected **test-only** EIP-1193 provider. It forwards actual transactions to unlocked loopback Anvil accounts, without private keys in the browser or fabricated hashes. This entry is excluded from the Vite production build. Tests cover public routes, mobile-width navigation/overflow, real creation/donation/payout/report/closure and original-donor refunds. They **do not automate or certify the MetaMask extension or a physical mobile wallet**.
+Browser tests use `app/e2e.html` with an injected **test-only** EIP-1193 provider. It forwards actual transactions to unlocked loopback Anvil accounts, without private keys in the browser or fabricated hashes. This entry is excluded from the Vite production build. Tests cover public and manager routes, legacy redirects, mobile navigation/overflow in portrait and landscape, reduced motion, homepage search, inline validation and keyboard error recovery, real creation/metadata editing/donation/tracking/approval/payout/report/closure and original-donor refunds. They **do not automate or certify the MetaMask extension or a physical mobile wallet**.
 
 Each integration/browser test restores an Anvil snapshot. Receipts existed and succeeded during execution, but are not canonical history after restoration. Seed receipts remain in `.local/seed-receipts.json` for the running demo. Snapshot-test hashes are explicitly marked reverted in `.local/verification-receipts.json`.
 
@@ -47,4 +47,4 @@ Manual MetaMask QA:
 5. Use two/three separate listed wallets to approve 2/3 or 3/5 actions; advance local time for sensitive changes. Check stale proposals after governance/recipient updates.
 6. Claim from original donor after failed target deadline; check KEEP_FUNDS/continuous have no entitlement. Finalize only after zero balance.
 7. Publish a public report digest/CID; fetch and compare exact bytes. Test missing gateway, mismatched hash, HTTPS endpoint CORS/authorization, expired Pinata signed URLs and privacy guidance.
-8. Check phone-width navigation, keyboard focus, Lao/English labels, screen-reader semantics, physical mobile wallet and a device-reachable RPC.
+8. Check phone-width navigation, keyboard focus, Lao labels, screen-reader semantics, physical mobile wallet and a device-reachable RPC.

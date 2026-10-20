@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/input-group";
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field";
 import {
-  ActionLink,
   EmptyState,
   ErrorNotice,
   Loading,
@@ -22,7 +21,14 @@ import {
 import { categoryLabel, fundStatusLabels } from "@/app/labels";
 
 export function Explore() {
-  const [version, setVersion] = useState(defaultDeployment?.version);
+  const [params, setParams] = useSearchParams();
+  const version = params.get("deployment") || defaultDeployment?.version;
+  const setVersion = (value: string) =>
+    setParams((old) => {
+      const next = new URLSearchParams(old);
+      next.set("deployment", value);
+      return next;
+    });
   const d = deployments.find((d) => d.version === version);
   return (
     <>
@@ -57,7 +63,17 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
   const q = useFunds(d);
   const [params, setParams] = useSearchParams();
   const category = params.get("category") || "all";
-  const [search, setSearch] = useState("");
+  const search = params.get("q") || "";
+  const setSearch = (value: string) =>
+    setParams(
+      (old) => {
+        const next = new URLSearchParams(old);
+        if (value) next.set("q", value);
+        else next.delete("q");
+        return next;
+      },
+      { replace: true },
+    );
   const [mode, setMode] = useState("all");
   const [status, setStatus] = useState("all");
   const [policy, setPolicy] = useState("all");
@@ -104,6 +120,7 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
         : sort === "ending"
           ? b.fund.config.deadline
           : b.id;
+    if (sort === "ending" && (!x || !y)) return !x && !y ? 0 : !x ? 1 : -1;
     return x === y ? 0 : sort === "ending" ? (x < y ? -1 : 1) : x > y ? -1 : 1;
   });
   const hasFilters =
@@ -114,8 +131,11 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
     policy !== "all" ||
     quorum !== "all";
   function reset() {
-    setSearch("");
-    setParams({});
+    setParams((old) => {
+      const next = new URLSearchParams();
+      if (old.has("deployment")) next.set("deployment", old.get("deployment")!);
+      return next;
+    });
     setMode("all");
     setStatus("all");
     setPolicy("all");
@@ -145,7 +165,12 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
               label="ໝວດໝູ່"
               value={category}
               onChange={(value) =>
-                setParams(value === "all" ? {} : { category: value })
+                setParams((old) => {
+                  const next = new URLSearchParams(old);
+                  if (value === "all") next.delete("category");
+                  else next.set("category", value);
+                  return next;
+                })
               }
               options={[
                 ["all", "ທຸກໝວດໝູ່"],
@@ -255,11 +280,7 @@ function FundBrowser({ d }: { d: NonNullable<typeof defaultDeployment> }) {
               <Button variant="outline" onClick={reset}>
                 ລ້າງຕົວເລືອກການຄົ້ນຫາ
               </Button>
-            ) : (
-              <ActionLink to="/funds/create" outline>
-                ສ້າງກອງທຶນ
-              </ActionLink>
-            )
+            ) : undefined
           }
         />
       ) : null}

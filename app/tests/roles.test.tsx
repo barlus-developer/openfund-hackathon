@@ -42,11 +42,11 @@ vi.mock("../src/features/funds/FundLayout", () => ({
     },
   }),
 }));
-const show = () =>
+const show = (settingsOnly = false) =>
   render(
     <LanguageProvider>
       <MemoryRouter>
-        <Manage />
+        <Manage settingsOnly={settingsOnly} />
       </MemoryRouter>
     </LanguageProvider>,
   );
@@ -81,16 +81,27 @@ describe("permissions derive from contract role responses", () => {
     expect(
       screen.queryByRole("option", { name: "ເພີ່ມຜູ້ຮັບ" }),
     ).not.toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole("button", { name: "ອັບເດດຂໍ້ມູນ (ສຳລັບຜູ້ຈັດການ)" }),
-    );
-    expect(
-      screen.getByRole("button", { name: "ບັນທຶກລິ້ງຂໍ້ມູນ" }),
-    ).toBeEnabled();
     fireEvent.change(
       screen.getByRole("combobox", { name: "ສິ່ງທີ່ຕ້ອງການສະເໜີ" }),
       { target: { value: "7" } },
     );
     expect(screen.getByText(/ການເລີ່ມປິດຈະຢຸດ/)).toBeInTheDocument();
+  });
+  it("exposes metadata editing in project settings for the manager", () => {
+    state.manager = state.address;
+    show(true);
+    expect(
+      screen.getByRole("button", { name: "ບັນທຶກລິ້ງຂໍ້ມູນ" }),
+    ).toBeEnabled();
+    expect(
+      screen.queryByRole("button", { name: /ສົ່ງຂໍ້ສະເໜີ/ }),
+    ).not.toBeInTheDocument();
+  });
+  it("keeps metadata editing disabled for other wallets", () => {
+    state.manager = "0x2222222222222222222222222222222222222222";
+    show(true);
+    expect(
+      screen.getByRole("button", { name: "ບັນທຶກລິ້ງຂໍ້ມູນ" }),
+    ).toBeDisabled();
   });
 });

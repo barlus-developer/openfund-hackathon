@@ -1,45 +1,116 @@
-import { ArrowRight, BookOpen, HeartPulse, Users } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useState, type FormEvent } from "react";
+import {
+  ArrowRight,
+  BookOpen,
+  HeartPulse,
+  Users,
+  Search,
+  Eye,
+  Route,
+  HandHeart,
+} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { defaultDeployment } from "@/web3/deployments";
 import { useFunds } from "@/web3/reads";
 import { FundCard } from "@/features/funds/FundCard";
-import {
-  ActionLink,
-  EmptyState,
-  ErrorNotice,
-  Loading,
-} from "@/components/common";
+import { EmptyState, ErrorNotice, Loading } from "@/components/common";
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  InputGroup,
+  InputGroupInput,
+  InputGroupAddon,
+} from "@/components/ui/input-group";
+import { Field, FieldLabel } from "@/components/ui/field";
 
 const categories = [
   { icon: BookOpen, label: "ການສຶກສາ", value: "Education" },
   { icon: HeartPulse, label: "ສຸຂະພາບ", value: "Healthcare" },
   { icon: Users, label: "ຊຸມຊົນ", value: "Community" },
 ];
-
 export function Home() {
+  const [search, setSearch] = useState("");
+  const navigate = useNavigate();
+  function discover(e: FormEvent) {
+    e.preventDefault();
+    navigate(
+      `/funds${search.trim() ? `?q=${encodeURIComponent(search.trim())}` : ""}`,
+    );
+  }
   return (
-    <div className="flex flex-col gap-12 sm:gap-16">
-      <section className="flex max-w-2xl flex-col items-start gap-6 py-6 sm:py-10">
-        <h1 className="text-3xl font-semibold leading-relaxed sm:text-5xl sm:leading-relaxed">
-          ຮ່ວມສ້າງສິ່ງດີໆ
-          <br />
-          <span className="text-primary">ໃຫ້ຊຸມຊົນຂອງເຮົາ.</span>
-        </h1>
-        <p className="text-base text-muted-foreground">
-          ເລືອກກອງທຶນ ຮ່ວມສະໜັບສະໜູນ ແລະຕິດຕາມການໃຊ້ເງິນ.
-        </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <ActionLink to="/funds">
-            ຄົ້ນຫາກອງທຶນ{" "}
-            <ArrowRight data-icon="inline-end" aria-hidden="true" />
-          </ActionLink>
-          <Link
-            to="/funds/create"
-            className={buttonVariants({ variant: "ghost", size: "lg" })}
+    <div className="flex flex-col gap-8 sm:gap-12">
+      <section className="grid items-center gap-8 py-4 sm:py-8 lg:grid-cols-[1.4fr_1fr] lg:gap-16">
+        <div className="flex flex-col items-start gap-6">
+          <p className="eyebrow">
+            <HandHeart className="size-4" aria-hidden="true" />
+            ເລີ່ມຈາກຄວາມຫ່ວງໃຍ · ເຕີບໂຕດ້ວຍພະລັງຊຸມຊົນ
+          </p>
+          <h1 className="text-3xl font-semibold leading-relaxed sm:text-5xl sm:leading-relaxed">
+            ຮ່ວມສ້າງສິ່ງດີໆ
+            <br />
+            <span className="text-primary">ໃຫ້ຊຸມຊົນຂອງເຮົາ.</span>
+          </h1>
+          <p className="text-base text-muted-foreground">
+            ເລືອກກອງທຶນ ຮ່ວມສະໜັບສະໜູນ ແລະຕິດຕາມການໃຊ້ເງິນ.
+          </p>
+          <form
+            onSubmit={discover}
+            className="flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:items-end"
+            role="search"
           >
-            ສ້າງກອງທຶນ
-          </Link>
+            <Field className="min-w-0 flex-1">
+              <FieldLabel htmlFor="home-search">ຢາກຊ່ວຍເລື່ອງໃດ?</FieldLabel>
+              <InputGroup>
+                <InputGroupAddon>
+                  <Search aria-hidden="true" />
+                </InputGroupAddon>
+                <InputGroupInput
+                  id="home-search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="ຊື່ກອງທຶນ ຫຼືສິ່ງທີ່ເຈົ້າສົນໃຈ…"
+                />
+              </InputGroup>
+            </Field>
+            <Button type="submit">
+              ຄົ້ນຫາກອງທຶນ
+              <ArrowRight data-icon="inline-end" aria-hidden="true" />
+            </Button>
+          </form>
+        </div>
+        <div className="hidden rounded-2xl bg-secondary px-6 py-8 sm:px-8 lg:block">
+          <ol
+            className="flex flex-col gap-6"
+            aria-label="ຈາກຄວາມຕ້ອງການສູ່ການຊ່ວຍເຫຼືອ"
+          >
+            {[
+              {
+                icon: Users,
+                title: "ຄວາມຕ້ອງການຂອງຊຸມຊົນ",
+                text: "ການສຶກສາ · ສຸຂະພາບ · ຊຸມຊົນ",
+              },
+              {
+                icon: HandHeart,
+                title: "ຮ່ວມກັນສະໜັບສະໜູນ",
+                text: "ເລືອກກອງທຶນທີ່ເຈົ້າຢາກຊ່ວຍ",
+              },
+              {
+                icon: Eye,
+                title: "ຕິດຕາມຜົນການດຳເນີນງານ",
+                text: "ເບິ່ງການໃຊ້ເງິນ ແລະລາຍງານຈາກກອງທຶນ",
+              },
+            ].map(({ icon: Icon, title, text }, index) => (
+              <li key={title} className="flex gap-4">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-background text-primary">
+                  <Icon className="size-5" aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="text-xs text-muted-foreground">0{index + 1}</p>
+                  <h2 className="font-semibold leading-8">{title}</h2>
+                  <p className="text-sm text-muted-foreground">{text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
       <section aria-labelledby="recent-funds" className="flex flex-col gap-6">
@@ -48,7 +119,8 @@ export function Home() {
             ກອງທຶນລ່າສຸດ
           </h2>
           <Link to="/funds" className={buttonVariants({ variant: "link" })}>
-            ເບິ່ງທັງໝົດ <ArrowRight data-icon="inline-end" aria-hidden="true" />
+            ເບິ່ງທັງໝົດ
+            <ArrowRight data-icon="inline-end" aria-hidden="true" />
           </Link>
         </div>
         <div className="flex flex-wrap gap-2" aria-label="ໝວດໝູ່ກອງທຶນ">
@@ -71,6 +143,34 @@ export function Home() {
             description="ກະລຸນາລອງໃໝ່ພາຍຫຼັງ."
           />
         )}
+      </section>
+      <section
+        aria-label="ຕິດຕາມການຊ່ວຍເຫຼືອ"
+        className="grid gap-6 border-t pt-8 sm:grid-cols-3"
+      >
+        {[
+          {
+            icon: Eye,
+            title: "ເຫັນຄວາມຄືບໜ້າ",
+            text: "ກວດຍອດສະໜັບສະໜູນຂອງແຕ່ລະກອງທຶນ.",
+          },
+          {
+            icon: Route,
+            title: "ຕິດຕາມເງິນໄດ້",
+            text: "ເບິ່ງປະຫວັດການຮັບ ແລະຈ່າຍເງິນສາທາລະນະ.",
+          },
+          {
+            icon: Users,
+            title: "ຮ່ວມກັນຮັບຜິດຊອບ",
+            text: "ກວດຜູ້ຈັດການ ແລະເງື່ອນໄຂການອະນຸມັດ.",
+          },
+        ].map(({ icon: Icon, title, text }) => (
+          <div key={title} className="flex flex-col gap-2">
+            <Icon className="mb-2 size-5 text-primary" aria-hidden="true" />
+            <h2 className="font-semibold">{title}</h2>
+            <p className="text-sm text-muted-foreground">{text}</p>
+          </div>
+        ))}
       </section>
     </div>
   );
@@ -97,11 +197,7 @@ function RecentFunds() {
     return (
       <EmptyState
         title="ຍັງບໍ່ມີກອງທຶນ"
-        action={
-          <ActionLink to="/funds/create" outline>
-            ສ້າງກອງທຶນ
-          </ActionLink>
-        }
+        description="ກອງທຶນໃໝ່ຈະສະແດງຢູ່ທີ່ນີ້. ກະລຸນາກັບມາເບິ່ງພາຍຫຼັງ."
       />
     );
   return (

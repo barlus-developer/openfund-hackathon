@@ -10,7 +10,7 @@ import { useActivity } from "@/hooks/useActivity";
 import { useTransaction } from "@/hooks/useTransaction";
 import { useProposal } from "@/web3/reads";
 import { openFundAbi } from "@/web3/generated/OpenFund";
-import { clientFor, fundPath } from "@/web3/deployments";
+import { clientFor, managerFundPath } from "@/web3/deployments";
 import {
   Panel,
   Notice,
@@ -51,7 +51,7 @@ export function Governance() {
           </dd>
         </dl>
         <div className="mt-6">
-          <ActionLink to={fundPath(d, row.id) + "/manage"} outline>
+          <ActionLink to={managerFundPath(d, row.id) + "/spending"} outline>
             {" "}
             ສະເໜີການດຳເນີນງານ{" "}
           </ActionLink>
@@ -109,7 +109,7 @@ export function ProposalList() {
               <Link
                 className="flex min-w-0 flex-col justify-between gap-4 border-b py-5 last:border-0 sm:flex-row"
                 key={ids[i].toString()}
-                to={fundPath(d, row.id) + `/proposals/${ids[i]}`}
+                to={managerFundPath(d, row.id) + `/proposals/${ids[i]}`}
               >
                 <div>
                   <strong>

@@ -95,7 +95,6 @@ export function useTransaction(d: Deployment) {
       toast.add({
         type: "success",
         title: "ຢືນຢັນລາຍການສຳເລັດ",
-        description: receipt.transactionHash,
       });
       await queryClient.invalidateQueries();
       return receipt;

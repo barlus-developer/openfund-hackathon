@@ -50,17 +50,23 @@ const fundingSchema = z
     try {
       amount(d.goal);
     } catch {
-      ctx.addIssue({ code: "custom", message: "Enter a positive OFL goal." });
+      ctx.addIssue({
+        code: "custom",
+        message: "Enter a positive OFL goal.",
+        path: ["goal"],
+      });
     }
     if (!/^\d+$/.test(d.days) || +d.days < 1 || +d.days > 365)
       ctx.addIssue({
         code: "custom",
         message: "Duration must be 1–365 whole days.",
+        path: ["days"],
       });
     if (d.policy === "")
       ctx.addIssue({
         code: "custom",
         message: "Choose the failure policy explicitly.",
+        path: ["policy"],
       });
   });
 const governanceSchema = z
@@ -70,8 +76,8 @@ const governanceSchema = z
     minimum: z.string(),
   })
   .superRefine((d, ctx) => {
-    const issue = (message: string) =>
-      ctx.addIssue({ code: "custom", message });
+    const issue = (message: string, field = "approvers") =>
+      ctx.addIssue({ code: "custom", message, path: [field] });
     try {
       const approvers = addressList(d.approvers);
       if (
@@ -89,6 +95,7 @@ const governanceSchema = z
       )
         issue(
           "Threshold must be between the immutable minimum and approver count.",
+          "threshold",
         );
     } catch {
       issue("Invalid approver wallet.");
@@ -110,9 +117,14 @@ const recipientSchema = z
         ctx.addIssue({
           code: "custom",
           message: "Use at most 100 unique recipients.",
+          path: ["recipients"],
         });
     } catch {
-      ctx.addIssue({ code: "custom", message: "Invalid allowlist wallet." });
+      ctx.addIssue({
+        code: "custom",
+        message: "Invalid allowlist wallet.",
+        path: ["recipients"],
+      });
     }
   });
 

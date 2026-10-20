@@ -105,9 +105,10 @@ async function harness(page: Page) {
     },
     { rpc, accounts: [...accounts] },
   );
-  await page.goto("/e2e.html");
+  await page.goto("/e2e.html#/manager");
   await page
     .getByRole("button", { name: "ເຊື່ອມຕໍ່ MetaMask", exact: true })
+    .first()
     .click();
   await expect(page.getByText("0xf39F…2266", { exact: true })).toBeVisible();
 }
@@ -120,6 +121,7 @@ test("public routes and mobile navigation read actual seeded chain state", async
   await expect(
     page.getByText("Learning together · Vientiane", { exact: true }),
   ).toBeVisible();
+  await page.screenshot({ path: ".local/ux-home-desktop.png", fullPage: true });
   for (const path of [
     "/funds",
     "/funds/local-v1/3",
@@ -132,6 +134,12 @@ test("public routes and mobile navigation read actual seeded chain state", async
     "/funds/local-v1/3/manage",
     "/wallet",
     "/dashboard/refunds",
+    "/donations",
+    "/manager",
+    "/manager/funds",
+    "/manager/approvals",
+    "/manager/transactions",
+    "/manager/funds/local-v1/3/settings",
     "/protocol",
     "/about",
     "/transactions",
@@ -145,7 +153,7 @@ test("public routes and mobile navigation read actual seeded chain state", async
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
     page.getByRole("button", { name: "ເຊື່ອມຕໍ່ MetaMask", exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   await page.goto("/");
   await page.getByRole("button", { name: "ເປີດເມນູ" }).click();
   await page
@@ -155,6 +163,7 @@ test("public routes and mobile navigation read actual seeded chain state", async
   await expect(
     page.getByRole("heading", { name: "ຄົ້ນຫາກອງທຶນ", exact: true }),
   ).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -166,7 +175,7 @@ test("browser wallet harness creates, donates once, approves, pays, reports and 
   page,
 }) => {
   await harness(page);
-  await page.goto("/e2e.html#/funds/create");
+  await page.goto("/e2e.html#/manager/create");
   await page
     .getByLabel("ຊື່ກອງທຶນ", { exact: true })
     .fill("Browser verified education fund");
@@ -193,6 +202,17 @@ test("browser wallet harness creates, donates once, approves, pays, reports and 
   await expect(
     page.getByRole("heading", { name: "Browser verified education fund" }),
   ).toBeVisible();
+  await page.screenshot({
+    path: ".local/ux-manager-desktop.png",
+    fullPage: true,
+  });
+  await page.getByRole("link", { name: "ຕັ້ງຄ່າ", exact: true }).click();
+  await page
+    .getByLabel("ລິ້ງຂໍ້ມູນເພີ່ມເຕີມ", { exact: true })
+    .fill("https://example.invalid/public-metadata");
+  await page.getByRole("button", { name: /ບັນທຶກລິ້ງຂໍ້ມູນ/ }).click();
+  await expect(page.getByText("ຢືນຢັນສຳເລັດ", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: /ເບິ່ງໜ້າສະໜັບສະໜູນ/ }).click();
   await page
     .getByRole("link", { name: "ຮ່ວມສະໜັບສະໜູນ", exact: true })
     .first()
@@ -216,7 +236,20 @@ test("browser wallet harness creates, donates once, approves, pays, reports and 
           .sent.length,
     ),
   ).toBe(countBefore + 1);
-  await page.getByRole("link", { name: "ກັບໄປກອງທຶນ", exact: true }).click();
+  await expect(page.getByLabel("ຈຳນວນ OFL", { exact: true })).toHaveCount(0);
+  await page
+    .locator("main")
+    .getByRole("link", { name: "ການສະໜັບສະໜູນຂອງຂ້ອຍ", exact: true })
+    .click();
+  await expect(
+    page.locator("main article").filter({ hasText: "12.000000000000000001" }),
+  ).toBeVisible();
+  await page
+    .locator("main article")
+    .filter({ hasText: "12.000000000000000001" })
+    .getByRole("link", { name: `ກອງທຶນ #${fundId}`, exact: true })
+    .click();
+  await page.getByRole("link", { name: /ເປີດໃນ Funding Manager/ }).click();
   await page.getByRole("link", { name: "ຈັດການກອງທຶນ", exact: true }).click();
   await page.getByLabel("ທີ່ຢູ່ຜູ້ຮັບ", { exact: true }).fill(accounts[1]);
   await page
@@ -362,4 +395,72 @@ test("browser self-claims an expired targeted refund without approvals", async (
       args: [id, accounts[0]],
     }),
   ).toBe(0n);
+});
+
+test("donor discovery and manager navigation stay distinct on small screens", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "ເຊື່ອມຕໍ່ MetaMask", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "ສ້າງກອງທຶນ", exact: true }),
+  ).toHaveCount(0);
+  await page.screenshot({ path: ".local/ux-home-mobile.png", fullPage: true });
+  await page.getByLabel("ຢາກຊ່ວຍເລື່ອງໃດ?").fill("Learning together");
+  await page.getByRole("button", { name: "ຄົ້ນຫາກອງທຶນ", exact: true }).click();
+  await expect(page.getByLabel("ຄົ້ນຫາກອງທຶນ", { exact: true })).toHaveValue(
+    "Learning together",
+  );
+  await expect(page.locator("article")).toHaveCount(1);
+  await page
+    .locator("article")
+    .getByRole("link", { name: /ຮ່ວມສະໜັບສະໜູນ/ })
+    .click();
+  await expect(page.getByLabel("ຈຳນວນ OFL", { exact: true })).toBeVisible();
+  await page.getByLabel("ຈຳນວນ OFL", { exact: true }).fill("-1");
+  await expect(page.getByLabel("ຈຳນວນ OFL", { exact: true })).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  await expect(
+    page.getByRole("button", { name: "ເຊື່ອມຕໍ່ MetaMask", exact: true }),
+  ).toBeVisible();
+  await page.goto("/#/funds/create");
+  await expect(page).toHaveURL(/#\/manager\/create$/);
+  await page.getByRole("button", { name: "ຕໍ່ໄປ", exact: true }).click();
+  await expect(page.getByLabel("ຊື່ກອງທຶນ", { exact: true })).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  await page.locator('a[href="#fund-title"]').click();
+  await expect(page.getByLabel("ຊື່ກອງທຶນ", { exact: true })).toBeFocused();
+  await page.getByRole("button", { name: "ເປີດເມນູຈັດການ" }).click();
+  await page
+    .getByRole("navigation", { name: "Funding Manager", exact: true })
+    .getByRole("link", { name: "ກອງທຶນຂອງຂ້ອຍ", exact: true })
+    .click();
+  await expect(page).toHaveURL(/#\/manager\/funds$/);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.setViewportSize({ width: 812, height: 375 });
+  await page.getByRole("button", { name: "ເປີດເມນູຈັດການ" }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("link", { name: "ຂໍ້ມູນເຄືອຂ່າຍ", exact: true })
+    .click();
+  await expect(page).toHaveURL(/#\/manager\/network$/);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });
