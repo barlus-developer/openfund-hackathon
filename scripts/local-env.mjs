@@ -6,7 +6,11 @@ import {
 } from "viem";
 import { mnemonicToAccount } from "viem/accounts";
 import { readFileSync } from "node:fs";
-export const rpc = process.env.LOCAL_RPC_URL || "http://127.0.0.1:8545";
+import { env, httpURL } from "./config.mjs";
+export const rpc = httpURL(
+  env("LOCAL_RPC_URL", "http://127.0.0.1:8545"),
+  "LOCAL_RPC_URL",
+);
 export const chain = defineChain({
   id: 31337,
   name: "Anvil",

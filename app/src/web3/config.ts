@@ -1,6 +1,6 @@
 import { createConfig, http } from "wagmi";
 import { metaMask } from "wagmi/connectors/metaMask";
-import { chainFor, deployments, defaultDeployment } from "./deployments";
+import { chainFor, deployments } from "./deployments";
 
 const chains = [
   ...new Map(
@@ -29,4 +29,3 @@ export const config = createConfig({
     chains.map((c) => [c.id, http(c.rpcUrls.default.http[0])]),
   ),
 });
-export const activeChain = chainFor(defaultDeployment);

@@ -5,6 +5,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ErrorNotice, SelectField, TextField } from "@/components/common";
 import { MAX_DOCUMENT_BYTES, uploadIPFS } from "@/lib/ipfs";
+import { appConfig } from "@/config";
 
 export function IPFSUpload({
   onHash,
@@ -14,12 +15,8 @@ export function IPFSUpload({
   onUploaded: (uri: string, hash: Hex) => void;
 }) {
   const [file, setFile] = useState<File>();
-  const [provider, setProvider] = useState(
-    import.meta.env.VITE_IPFS_PROVIDER === "pinata" ? "pinata" : "kubo",
-  );
-  const [endpoint, setEndpoint] = useState(
-    import.meta.env.VITE_IPFS_API_URL || "",
-  );
+  const [provider, setProvider] = useState("kubo");
+  const [endpoint, setEndpoint] = useState(appConfig.ipfsAPI);
   // Authorization and signed URLs live only in this mounted component. Never persist or bundle them.
   const [authorization, setAuthorization] = useState("");
   const [signedURL, setSignedURL] = useState("");

@@ -8,7 +8,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Disclosure } from "@/components/patterns";
 import { useState } from "react";
 import { useConnection } from "wagmi";
-import { decodeEventLog, encodeFunctionData, formatUnits } from "viem";
+import { parseEventLogs, encodeFunctionData, formatUnits } from "viem";
 import { chainFor } from "@/web3/deployments";
 import { useFundContext } from "@/features/funds/FundLayout";
 import { useBalances } from "@/web3/reads";
@@ -63,18 +63,14 @@ export function Donate() {
         }),
       );
       if (!r) return;
-      const event = r.logs
-        .filter(
-          (l) => l.address.toLowerCase() === d.openFundAddress.toLowerCase(),
-        )
-        .map((l) => {
-          try {
-            return decodeEventLog({ abi: openFundAbi, ...l });
-          } catch {
-            return null;
-          }
-        })
-        .find((e) => e?.eventName === "DonationReceived");
+      const [event] = parseEventLogs({
+        abi: openFundAbi,
+        eventName: "DonationReceived",
+        logs: r.logs.filter(
+          (log) =>
+            log.address.toLowerCase() === d.openFundAddress.toLowerCase(),
+        ),
+      });
       if (
         event?.eventName !== "DonationReceived" ||
         event.args.fundId !== row.id

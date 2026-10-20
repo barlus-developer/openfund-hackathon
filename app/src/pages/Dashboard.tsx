@@ -3,7 +3,7 @@ import { actionLabels, proposalStatusLabels } from "@/app/labels";
 import { useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { useConnection } from "wagmi";
-import { useQueries, useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { encodeFunctionData } from "viem";
 import {
   defaultDeployment,
@@ -254,21 +254,16 @@ function RefundTask({
   const tx = useTransaction(d),
     c = useConnection(),
     { t } = useLanguage();
-  const queries = useQueries({
-    queries: [
-      {
-        queryKey: ["refund", d.version, id.toString(), address],
-        queryFn: () =>
-          clientFor(d).readContract({
-            address: d.openFundAddress,
-            abi: openFundAbi,
-            functionName: "getRefundableAmount",
-            args: [id, address],
-          }),
-      },
-    ],
+  const q = useQuery({
+    queryKey: ["refund", d.version, id.toString(), address],
+    queryFn: () =>
+      clientFor(d).readContract({
+        address: d.openFundAddress,
+        abi: openFundAbi,
+        functionName: "getRefundableAmount",
+        args: [id, address],
+      }),
   });
-  const q = queries[0];
   if (q.error) return <ErrorNotice error={q.error} />;
   if (q.isLoading) return <Loading />;
   if (!q.data)

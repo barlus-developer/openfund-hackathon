@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import {
-  decodeEventLog,
+  parseEventLogs,
   encodeAbiParameters,
   keccak256,
   stringToHex,
@@ -60,16 +60,13 @@ const send = (i, fn, args) => transact(i, d.openFundAddress, abi, fn, args);
 const snapshot = await client.request({ method: "evm_snapshot" });
 const receipts = [];
 function idFrom(r, name, key) {
-  const e = r.logs
-    .filter((l) => l.address.toLowerCase() === d.openFundAddress.toLowerCase())
-    .map((l) => {
-      try {
-        return decodeEventLog({ abi, ...l });
-      } catch {
-        return null;
-      }
-    })
-    .find((e) => e?.eventName === name);
+  const [e] = parseEventLogs({
+    abi,
+    eventName: name,
+    logs: r.logs.filter(
+      (log) => log.address.toLowerCase() === d.openFundAddress.toLowerCase(),
+    ),
+  });
   assert(e);
   return e.args[key];
 }

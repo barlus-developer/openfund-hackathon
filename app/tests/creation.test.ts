@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { emptyDraft, creationArgs } from "../src/features/funds/creation";
+import {
+  emptyDraft,
+  creationArgs,
+  validateStep,
+} from "../src/features/funds/creation";
 import {
   decodeEventLog,
   encodeAbiParameters,
@@ -39,6 +43,20 @@ describe("creation schema", () => {
     expect(p.fundingGoal).toBe(0n);
     expect(p.duration).toBe(0n);
     expect(p.underfundingPolicy).toBe(0);
+  });
+  it("validates wizard steps independently with the final submission rules", () => {
+    expect(() => validateStep({ ...validDraft, goal: "" }, 0)).not.toThrow();
+    expect(() => validateStep({ ...validDraft, title: "" }, 1)).not.toThrow();
+    for (const [step, change] of [
+      [0, { title: "ລ".repeat(41) }],
+      [1, { days: "366" }],
+      [2, { approvers: addresses[0] + "\n" + addresses[0] }],
+      [3, { recipientPolicy: "1" as const, recipients: "invalid" }],
+    ] as const) {
+      const draft = { ...validDraft, ...change };
+      expect(() => validateStep(draft, step)).toThrow();
+      expect(() => creationArgs(draft)).toThrow();
+    }
   });
   it.each([
     { policy: "" as const },

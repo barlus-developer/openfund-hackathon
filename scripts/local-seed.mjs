@@ -1,10 +1,10 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import {
   encodeAbiParameters,
   keccak256,
   stringToHex,
   parseEther,
-  decodeEventLog,
+  parseEventLogs,
 } from "viem";
 import {
   account,
@@ -94,15 +94,14 @@ for (const t of templates) {
     Array.from({ length: t.members }, (_, i) => account(i).address),
     [],
   ]);
-  const event = r.logs
-    .map((log) => {
-      try {
-        return decodeEventLog({ abi: core, ...log });
-      } catch {
-        return null;
-      }
-    })
-    .find((e) => e?.eventName === "FundCreated");
+  const [event] = parseEventLogs({
+    abi: core,
+    eventName: "FundCreated",
+    logs: r.logs.filter(
+      (log) => log.address.toLowerCase() === d.openFundAddress.toLowerCase(),
+    ),
+  });
+  if (!event) throw Error("Fund creation receipt has no FundCreated event.");
   const id = event.args.fundId;
   const donation = await transact(
     5,

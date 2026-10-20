@@ -12,12 +12,8 @@ import {
 } from "@/components/ui/sheet";
 import { RouteNavigation } from "@/components/patterns";
 import { Connect } from "@/features/wallet/Connect";
-import {
-  defaultDeployment,
-  resolveDeployment,
-  deploymentConfigurationError,
-} from "@/web3/deployments";
-import { ErrorNotice, Loading } from "@/components/common";
+import { defaultDeployment, resolveDeployment } from "@/web3/deployments";
+import { Loading } from "@/components/common";
 
 const navigation = [
   { to: "/funds", label: "ຄົ້ນຫາກອງທຶນ" },
@@ -131,7 +127,6 @@ export function Layout() {
         tabIndex={-1}
         className="mx-auto flex min-h-[65vh] max-w-6xl flex-col gap-8 px-5 py-8 outline-none sm:px-8 sm:py-12 lg:pb-20"
       >
-        <ErrorNotice error={deploymentConfigurationError} />
         <Suspense fallback={<Loading />}>
           <Outlet />
         </Suspense>

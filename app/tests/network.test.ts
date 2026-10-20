@@ -30,9 +30,7 @@ describe("development network configuration", () => {
     expect(() => selectDeployment([local], "unknown")).toThrow("missing");
   });
   it("does not treat remote demo tokens as a local chain", () => {
-    const chain = deploymentChain(remote, {
-      localRPC: "http://localhost:9999",
-    });
+    const chain = deploymentChain(remote);
     expect(chain.rpcUrls.default.http[0]).toBe("https://rpc.example.org/");
     expect(chain.testnet).toBe(true);
     expect(chain.nativeCurrency.symbol).toBe("TEST");
@@ -52,8 +50,10 @@ describe("development network configuration", () => {
   it("keeps native network identity separate from demo labeling", () => {
     expect(deploymentChain({ ...remote, testnet: false }).testnet).toBe(false);
     expect(
-      deploymentChain(local, { localRPC: "http://localhost:8546" }).rpcUrls
-        .default.http[0],
+      deploymentChain(local, {
+        rpcURL: "http://localhost:8546",
+        chainId: 31337,
+      }).rpcUrls.default.http[0],
     ).toBe("http://localhost:8546/");
     expect(() =>
       deploymentChain({

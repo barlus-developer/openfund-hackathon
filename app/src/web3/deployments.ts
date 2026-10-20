@@ -1,37 +1,31 @@
 import { createPublicClient, http, type Chain } from "viem";
 import manifests from "./generated/deployments.json";
 import { deploymentChain, selectDeployment, type Deployment } from "./network";
+import { appConfig } from "../config";
 export type { Deployment } from "./network";
 
 export const deployments = manifests as Deployment[];
 export function resolveDeployment(version: string | undefined) {
   return deployments.find((d) => d.version === version);
 }
-let selected: Deployment | undefined;
-export let deploymentConfigurationError: Error | undefined;
-try {
-  selected = selectDeployment(
-    deployments,
-    import.meta.env.VITE_DEFAULT_DEPLOYMENT,
-  );
-} catch (error) {
-  deploymentConfigurationError = error as Error;
-}
-export const defaultDeployment = selected;
+export const defaultDeployment = selectDeployment(
+  deployments,
+  appConfig.defaultDeployment,
+);
 export function chainFor(d?: Deployment): Chain {
   return deploymentChain(d, {
-    rpcURL: import.meta.env.VITE_RPC_URL,
+    rpcURL: appConfig.rpcURL,
     chainId: defaultDeployment?.chainId,
-    localRPC: import.meta.env.VITE_LOCAL_RPC_URL,
   });
 }
 const clients = new Map<string, ReturnType<typeof createPublicClient>>();
 export function clientFor(d: Deployment) {
   let client = clients.get(d.version);
   if (!client) {
+    const chain = chainFor(d);
     client = createPublicClient({
-      chain: chainFor(d),
-      transport: http(chainFor(d).rpcUrls.default.http[0], {
+      chain,
+      transport: http(chain.rpcUrls.default.http[0], {
         retryCount: 2,
         timeout: 12000,
       }),

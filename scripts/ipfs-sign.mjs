@@ -1,9 +1,6 @@
 // One-shot CLI helper, not an application server. Never imported into React.
-const jwt = process.env.PINATA_JWT?.trim();
-if (!jwt)
-  throw Error(
-    "Set PINATA_JWT only in your CLI environment or ignored root .env; never use a VITE_ variable.",
-  );
+import { requiredEnv } from "./config.mjs";
+const jwt = requiredEnv("PINATA_JWT");
 const response = await fetch("https://uploads.pinata.cloud/v3/files/sign", {
   method: "POST",
   headers: {

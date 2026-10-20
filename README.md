@@ -6,7 +6,7 @@ An immutable Solidity funding protocol and static React Web3 DApp for public com
 
 ## Quick start
 
-Requires Node **22.22.1+** (Node 24 LTS recommended), npm and a browser. Foundry 1.7.1 is installed as a pinned development dependency; forge-std is vendored. First compilation downloads Solidity 0.8.30. No proprietary RPC or wallet API key is required.
+Local development needs no `.env` file. Requires Node **22.22.1+** (Node 24 LTS recommended), npm and a browser. Foundry 1.7.1 is installed as a pinned development dependency; forge-std is vendored. First compilation downloads Solidity 0.8.30. No proprietary RPC or wallet API key is required.
 
 ```bash
 npm ci
@@ -31,7 +31,7 @@ Deployment generates actual addresses and a deployment-block hash in [deployment
 
 ## Your developer RPC and real IPFS
 
-Use [the remote development guide](docs/DEVELOPMENT_NETWORK.md) to configure your actual network and upload service. Copy `.env.example` to the **repository root** `.env`; Vite and the development CLI helpers read it. Import a deployed protocol using its real creation receipt with `npm run deployment:import`, select its version with `VITE_DEFAULT_DEPLOYMENT`, then run `npm run dev`. The importer validates chain identity, compiled runtimes and protected registration before exporting addresses.
+Use [the remote development guide](docs/DEVELOPMENT_NETWORK.md) to configure your actual network and upload service. Copy `.env.example` to the **repository root** `.env`; Vite and the development CLI helpers read it. Import a deployed protocol using its real creation receipt with `npm run deployment:import`, then run `npm run dev`. The importer validates chain identity, compiled runtimes and protected registration before exporting addresses. The first manifest entry is selected automatically; set `VITE_DEFAULT_DEPLOYMENT` only to pin a version.
 
 For new testnet contracts, `npm run deploy:dev -- --account your-keystore` simulates; add `--broadcast` to send. `npm run register:dev` uses the issuer's signer. No remote key, RPC or contract address is guessed, and Anvil's public mnemonic is restricted to local tools.
 

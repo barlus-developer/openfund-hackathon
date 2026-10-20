@@ -1,4 +1,5 @@
 import { defineChain, type Address, type Chain } from "viem";
+import { publicURL } from "../config.ts";
 
 export type Deployment = {
   chainId: number;
@@ -28,24 +29,13 @@ export function selectDeployment(list: Deployment[], version?: string) {
 
 export function deploymentChain(
   d?: Deployment,
-  overrides: { rpcURL?: string; chainId?: number; localRPC?: string } = {},
+  overrides: { rpcURL?: string; chainId?: number } = {},
 ): Chain {
   const id = d?.chainId ?? 31337;
   const rpc =
     overrides.rpcURL && overrides.chainId === id
       ? overrides.rpcURL
-      : id === 31337 && overrides.localRPC
-        ? overrides.localRPC
-        : d?.rpcUrls[0] || "http://127.0.0.1:8545";
-  const url = new URL(rpc);
-  if (
-    !["http:", "https:"].includes(url.protocol) ||
-    url.username ||
-    url.password
-  )
-    throw Error(
-      "RPC must be an HTTP(S) URL without embedded login credentials.",
-    );
+      : d?.rpcUrls[0] || "http://127.0.0.1:8545";
   return defineChain({
     id,
     name: d?.name ?? "Anvil (not deployed)",
@@ -54,7 +44,13 @@ export function deploymentChain(
       symbol: "ETH",
       decimals: 18,
     },
-    rpcUrls: { default: { http: [url.href, ...(d?.rpcUrls.slice(1) ?? [])] } },
+    rpcUrls: {
+      default: {
+        http: [rpc, ...(d?.rpcUrls.slice(1) ?? [])].map((url) =>
+          publicURL(url, "RPC"),
+        ),
+      },
+    },
     ...(d?.explorerUrl
       ? {
           blockExplorers: { default: { name: "Explorer", url: d.explorerUrl } },

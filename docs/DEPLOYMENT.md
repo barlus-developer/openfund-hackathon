@@ -6,7 +6,7 @@ Run commands from repository root. `npm ci` installs pinned npm Foundry binaries
 REPLACE_LOCAL_DEPLOYMENT=1 npm run local
 ```
 
-This starts Anvil only on 127.0.0.1:8545, checks client identity/chain, broadcasts DeployLocal sequentially (`--slow`, avoiding local transaction-pool ordering gaps), generates actual manifest/ABI files, seeds three funds and runs Vite. Default chain is 31337, native currency ETH. Use `npm run dev -w app -- --port 5180 --strictPort` for a specific UI port. The convenience script refuses an occupied RPC port and cleans up its Anvil on exit.
+This starts Anvil on the configured loopback `LOCAL_RPC_URL` (default `http://127.0.0.1:8545`), checks client identity/chain, broadcasts DeployLocal sequentially (`--slow`, avoiding local transaction-pool ordering gaps), generates actual manifest/ABI files, seeds three funds and runs Vite. Default chain is 31337, native currency ETH. Use `npm run dev -w app -- --port 5180 --strictPort` for a specific UI port. The convenience script refuses an occupied RPC port and cleans up its Anvil on exit.
 
 For a separate persistent Anvil process:
 

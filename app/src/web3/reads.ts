@@ -106,22 +106,6 @@ export function useProposal(d: Deployment, id: bigint) {
     refetchInterval: 5000,
   });
 }
-export const fundStatuses = [
-  "FUNDRAISING",
-  "ACTIVE",
-  "REFUNDABLE",
-  "CLOSING",
-  "CLOSED",
-];
-export const proposalStatuses = [
-  "PENDING",
-  "TIMELOCKED",
-  "EXECUTABLE",
-  "EXECUTED",
-  "CANCELLED",
-  "EXPIRED",
-  "INVALIDATED",
-];
 export const actionNames = [
   "PAYOUT",
   "CHANGE_MANAGER",

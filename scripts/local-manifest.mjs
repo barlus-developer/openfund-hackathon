@@ -1,11 +1,12 @@
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
+import { env } from "./config.mjs";
 import { client, requireAnvil, rpc } from "./local-env.mjs";
 await requireAnvil();
 const manifests = JSON.parse(readFileSync("deployments/official.json", "utf8"));
 if (process.argv.includes("--check")) {
   if (
     manifests.some((d) => d.version === "local-v1") &&
-    process.env.REPLACE_LOCAL_DEPLOYMENT !== "1"
+    env("REPLACE_LOCAL_DEPLOYMENT") !== "1"
   )
     throw Error(
       "Local manifest already exists. For an intentional fresh deployment use REPLACE_LOCAL_DEPLOYMENT=1. Existing funds remain on their original address.",

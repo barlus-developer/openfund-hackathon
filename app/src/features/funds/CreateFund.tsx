@@ -4,7 +4,7 @@ import { stored, remember, forget } from "@/lib/storage";
 import { useState, useEffect } from "react";
 import { useConnection } from "wagmi";
 import { useNavigate } from "react-router-dom";
-import { encodeFunctionData, decodeEventLog } from "viem";
+import { encodeFunctionData, parseEventLogs } from "viem";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import {
@@ -79,10 +79,11 @@ function Wizard() {
     />
   );
   let review;
+  let reviewError;
   try {
     review = creationArgs(draft);
-  } catch {
-    /* Review shows all validation errors below. */
+  } catch (error) {
+    reviewError = friendlyError(error);
   }
   async function submit() {
     setError(undefined);
@@ -97,18 +98,14 @@ function Wizard() {
         }),
       );
       if (!r) return;
-      const created = r.logs
-        .filter(
-          (l) => l.address.toLowerCase() === d.openFundAddress.toLowerCase(),
-        )
-        .map((l) => {
-          try {
-            return decodeEventLog({ abi: openFundAbi, ...l });
-          } catch {
-            return null;
-          }
-        })
-        .find((e) => e?.eventName === "FundCreated");
+      const [created] = parseEventLogs({
+        abi: openFundAbi,
+        eventName: "FundCreated",
+        logs: r.logs.filter(
+          (log) =>
+            log.address.toLowerCase() === d.openFundAddress.toLowerCase(),
+        ),
+      });
       if (!created || created.eventName !== "FundCreated")
         throw Error(
           "ຍັງບໍ່ພົບຫຼັກຖານການສ້າງກອງທຶນ. ກະລຸນາກວດໃບຢືນຢັນກ່ອນລອງໃໝ່.",
@@ -342,16 +339,7 @@ function Wizard() {
                   <dd className="whitespace-pre-wrap">{draft.terms}</dd>
                 </dl>
               ) : (
-                <Notice title="ກະລຸນາກວດສອບຂໍ້ມູນ">
-                  {(() => {
-                    try {
-                      creationArgs(draft);
-                      return "";
-                    } catch (e) {
-                      return friendlyError(e);
-                    }
-                  })()}
-                </Notice>
+                <Notice title="ກະລຸນາກວດສອບຂໍ້ມູນ">{reviewError}</Notice>
               )}
               <Disclosure title="ຂໍ້ມູນອ້າງອີງ">
                 <code>{review?.[0].termsHash}</code>

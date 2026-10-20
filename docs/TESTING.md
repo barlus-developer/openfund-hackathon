@@ -5,8 +5,8 @@ This records development checks actually executed in this repository; it is not 
 | Command                  | Result                                                                       |
 | ------------------------ | ---------------------------------------------------------------------------- |
 | `npm run contracts:test` | 33 tests passed: 28 deterministic/fuzz cases plus 5 stateful invariants      |
-| `npm test`               | 50 client tests passed across 9 files                                        |
-| `npm run test:scripts`   | Deployment script tests passed (4 cases; also executed directly with Node)   |
+| `npm test`               | 63 client tests passed across 11 files                                       |
+| `npm run test:scripts`   | 8 configuration/deployment cases passed (also executed directly with Node)   |
 | `npm run typecheck`      | Strict TypeScript passed                                                     |
 | `npm run lint`           | ESLint passed                                                                |
 | `npm run build`          | Vite production build passed                                                 |
@@ -19,6 +19,8 @@ Contract fuzzing runs 256 amount cases. Stateful invariants run 128 sequences ×
 Unit/integration tests exercise protected transfer/mint/allowance routes, callback authorization consumption, registration, exact deadlines/goals, immutable policy divergence, 1/1–2/3–3/5 governance, recovery, duplicate votes, distinct approval/execution windows, timelocks, allowlist invalidation, payout races, refunds without expiry, closure settlement, reports, metadata and version isolation.
 
 Frontend tests exercise remote network/version selection, scoped RPC overrides, native network metadata, HTTPS Kubo prefix/auth/pinning requests, Pinata signed public uploads, upload cancellation/response validation, session credential clearing, file replacement/size limits, gateway integrity checks, bare CID references and unsafe URI rejection, exact BigInt conversion, the real overloaded ABI, canonical creation and receipt IDs, malformed input, log dedupe/reorg removal, range subdivision, partial RPC failure/cancel, cache identity, receipt-only confirmation, replacement validation, wallet connection/switch/rejection, current manager/approver role visibility and empty states.
+
+Configuration tests cover empty defaults, malformed URLs, safe error messages, exact chain IDs, testnet acknowledgement, root `.env` loading outside the working directory and shell precedence. Creation wizard steps share and test the final submission validation rules.
 
 Deployment utility tests reject wrong-chain/failed-create/unprotected/mismatched-runtime/reorg/underconfirmed imports and prevent version repointing. The read-only importer inspection was also run against the actual Anvil creation receipt, both compiled runtimes and protected registration. No live external RPC deployment or third-party IPFS upload was performed without user endpoints/capabilities.
 

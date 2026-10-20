@@ -1,4 +1,7 @@
 import { keccak256, type Hex } from "viem";
+import { appConfig } from "../config";
+
+export const MAX_DOCUMENT_BYTES = 5_000_000;
 export function normalizeContentURI(value: string) {
   const uri = value.trim();
   // Common CIDv0 (base58btc) and CIDv1 (base32) forms can be pasted without a scheme.
@@ -8,15 +11,11 @@ export function normalizeContentURI(value: string) {
 }
 export function contentURL(uri: string) {
   uri = normalizeContentURI(uri);
-  const gateway = import.meta.env.VITE_IPFS_GATEWAY || "https://ipfs.io/ipfs/";
   if (uri.startsWith("ipfs://")) {
     const path = uri.slice(7).replace(/^ipfs\//, "");
     if (!/^[a-zA-Z0-9]+(?:\/[^\s]*)?$/.test(path) || path.includes(".."))
       throw Error("Invalid IPFS content path.");
-    const base = new URL(gateway);
-    if (!["http:", "https:"].includes(base.protocol))
-      throw Error("Invalid gateway.");
-    return new URL(path, gateway.endsWith("/") ? gateway : gateway + "/").href;
+    return new URL(path, appConfig.ipfsGateway).href;
   }
   const u = new URL(uri);
   if (!["http:", "https:"].includes(u.protocol))
@@ -28,7 +27,7 @@ export async function verifyContent(uri: string, hash: Hex) {
     signal: AbortSignal.timeout(15000),
   });
   if (!r.ok) throw Error(`Document unavailable (${r.status}).`);
-  if (Number(r.headers.get("content-length") || 0) > 5_000_000)
+  if (Number(r.headers.get("content-length") || 0) > MAX_DOCUMENT_BYTES)
     throw Error("Document exceeds 5 MB verification limit.");
   const reader = r.body?.getReader();
   if (!reader) throw Error("Document body unavailable.");
@@ -39,7 +38,7 @@ export async function verifyContent(uri: string, hash: Hex) {
       const { done, value } = await reader.read();
       if (done) break;
       length += value.length;
-      if (length > 5_000_000)
+      if (length > MAX_DOCUMENT_BYTES)
         throw Error("Document exceeds 5 MB verification limit.");
       chunks.push(value);
     }
@@ -52,13 +51,13 @@ export async function verifyContent(uri: string, hash: Hex) {
     bytes.set(chunk, offset);
     offset += chunk.length;
   }
+  const actual = keccak256(bytes);
   return {
-    match: keccak256(bytes) === hash,
-    actual: keccak256(bytes),
+    match: actual === hash,
+    actual,
     bytes: length,
   };
 }
-export const MAX_DOCUMENT_BYTES = 5_000_000;
 export type IPFSPublisher =
   | { provider: "kubo"; endpoint: string; authorization?: string }
   | { provider: "pinata"; signedURL: string };
