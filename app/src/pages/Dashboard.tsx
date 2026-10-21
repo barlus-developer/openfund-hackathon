@@ -446,6 +446,7 @@ function RefundTask({
     { t } = useLanguage();
   const q = useQuery({
     queryKey: ["refund", d.version, id.toString(), address],
+    refetchInterval: 10000,
     queryFn: () =>
       clientFor(d).readContract({
         address: d.openFundAddress,

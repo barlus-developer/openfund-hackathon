@@ -54,7 +54,7 @@ export function Governance() {
         <div className="mt-6">
           <ActionLink
             icon={Send}
-            to={managerFundPath(d, row.id) + "/spending"}
+            to={managerFundPath(d, row.id) + "/spending?section=team"}
             outline
           >
             {" "}
@@ -173,6 +173,7 @@ function Detail({ id }: { id: bigint }) {
   const voted = useQuery({
     queryKey: ["vote", d.version, id.toString(), c.address],
     enabled: !!c.address,
+    refetchInterval: 5000,
     queryFn: () =>
       clientFor(d).readContract({
         address: d.openFundAddress,
@@ -263,6 +264,7 @@ function Detail({ id }: { id: bigint }) {
               <Button
                 disabled={
                   !isApprover ||
+                  !voted.isSuccess ||
                   voted.data ||
                   s !== 0 ||
                   tx.busy ||
@@ -328,6 +330,7 @@ function Detail({ id }: { id: bigint }) {
               </Button>
             ) : null}
           </div>
+          <ErrorNotice error={voted.error} />
           <small>
             {!hasFunds
               ? "ຍອດເງິນບໍ່ພຽງພໍ. ອາດມີການຈ່າຍເງິນລາຍການອື່ນໄປແລ້ວ."

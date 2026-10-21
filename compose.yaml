@@ -7,10 +7,10 @@ services:
       context: .
       dockerfile: docker/app/Dockerfile
       args:
-        VITE_DEFAULT_DEPLOYMENT: local-v1
-        VITE_RPC_URL: http://127.0.0.1:8545
-        VITE_IPFS_API_URL: http://127.0.0.1:5001
-        VITE_IPFS_GATEWAY: http://127.0.0.1:8080/ipfs/
+        VITE_DEFAULT_DEPLOYMENT: ${VITE_DEFAULT_DEPLOYMENT:-local-v1}
+        VITE_RPC_URL: ${VITE_RPC_URL:-http://127.0.0.1:8545}
+        VITE_IPFS_API_URL: ${VITE_IPFS_API_URL:-http://127.0.0.1:5001}
+        VITE_IPFS_GATEWAY: ${VITE_IPFS_GATEWAY:-http://127.0.0.1:8080/ipfs/}
     ports:
       - "127.0.0.1:5173:80"
     depends_on:

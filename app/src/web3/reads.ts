@@ -16,7 +16,13 @@ export type FundRow = {
 };
 export async function readFund(d: Deployment, id: bigint): Promise<FundRow> {
   const c = clientFor(d);
-  const base = { address: d.openFundAddress, abi: openFundAbi } as const;
+  // Read status, balance and roles from one block so permissions cannot straddle a governance change.
+  const blockNumber = await c.getBlockNumber({ cacheTime: 0 });
+  const base = {
+    address: d.openFundAddress,
+    abi: openFundAbi,
+    blockNumber,
+  } as const;
   const [fund, status, approvers] = await Promise.all([
     c.readContract({ ...base, functionName: "getFund", args: [id] }),
     c.readContract({
@@ -55,7 +61,7 @@ export function useFunds(d: Deployment) {
         (_, i) => end - BigInt(i),
       );
       const rows: FundRow[] = [];
-      // Bound concurrent RPC reads to 4 funds / 12 requests. No multicall contract is assumed on Anvil.
+      // Bound concurrent RPC reads to 4 funds (one block lookup and three reads each).
       for (let i = 0; i < ids.length; i += 4)
         rows.push(
           ...(await Promise.all(

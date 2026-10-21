@@ -21,9 +21,13 @@ import {
 } from "@/components/ui/input-group";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Reveal } from "@/components/motion";
+import community640 from "@/assets/community-support-640.webp";
+import community960 from "@/assets/community-support-960.webp";
+import community1440 from "@/assets/community-support-1440.webp";
 
 export function Home() {
   const [search, setSearch] = useState("");
+  const [imageLoaded, setImageLoaded] = useState(false);
   const navigate = useNavigate();
   function discover(e: FormEvent) {
     e.preventDefault();
@@ -33,7 +37,7 @@ export function Home() {
   }
   return (
     <div className="home-page flex flex-col gap-8 sm:gap-12">
-      <section className="grid items-center gap-8 py-4 sm:py-8 lg:grid-cols-[1.4fr_1fr] lg:gap-16">
+      <section className="grid items-center gap-8 py-4 sm:py-8 lg:grid-cols-[1.15fr_1fr] lg:gap-x-12 lg:gap-y-10">
         <div className="hero-copy flex flex-col items-start gap-6">
           <p className="eyebrow">
             <HandHeart className="size-4" aria-hidden="true" />
@@ -72,9 +76,25 @@ export function Home() {
             </Button>
           </form>
         </div>
-        <div className="hero-journey hidden rounded-2xl bg-secondary px-6 py-8 sm:px-8 lg:block">
+        <div className="flex min-w-0 flex-col gap-5">
+          <figure className="hero-art aspect-[3/2] overflow-hidden rounded-2xl bg-secondary">
+            <img
+              src={community960}
+              srcSet={`${community640} 640w, ${community960} 960w, ${community1440} 1440w`}
+              sizes="(min-width: 1024px) 42vw, (min-width: 640px) 90vw, 100vw"
+              width={1440}
+              height={960}
+              alt="ພາບປະກອບອາສາສະໝັກຮ່ວມກັນມອບອາຫານ ແລະປຶ້ມໃຫ້ຄອບຄົວໃນຊຸມຊົນລາວ"
+              fetchPriority="high"
+              decoding="async"
+              onLoad={() => setImageLoaded(true)}
+              className={`size-full object-cover transition-opacity duration-500 motion-reduce:transition-none ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+            />
+          </figure>
+        </div>
+        <div className="hero-journey rounded-2xl bg-secondary px-5 py-5 sm:px-6 lg:col-span-2">
           <ol
-            className="flex flex-col gap-6"
+            className="grid gap-6 md:grid-cols-3"
             aria-label="ຈາກຄວາມຕ້ອງການສູ່ການຊ່ວຍເຫຼືອ"
           >
             {[

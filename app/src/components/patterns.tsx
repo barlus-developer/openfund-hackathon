@@ -74,15 +74,24 @@ export function Disclosure({
   children,
   defaultOpen = false,
   icon: Icon,
+  open,
+  onOpenChange,
 }: {
   title: ReactNode;
   children: ReactNode;
   defaultOpen?: boolean;
   icon?: LucideIcon;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const [initialValue] = useState(() => (defaultOpen ? ["details"] : []));
   return (
-    <Accordion defaultValue={initialValue}>
+    <Accordion
+      {...(open === undefined
+        ? { defaultValue: initialValue }
+        : { value: open ? ["details"] : [] })}
+      onValueChange={(value) => onOpenChange?.(value.includes("details"))}
+    >
       <AccordionItem value="details">
         <AccordionTrigger>
           <span className="flex min-w-0 items-center gap-2">

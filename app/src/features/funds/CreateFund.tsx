@@ -40,6 +40,8 @@ import { openFundAbi } from "@/web3/generated/OpenFund";
 import { useTransaction } from "@/hooks/useTransaction";
 import { emptyDraft, creationArgs, validateStep, type Draft } from "./creation";
 import { Connect } from "@/features/wallet/Connect";
+import { FundImageManager } from "./FundImageManager";
+import { FundVisualStory } from "./FundImages";
 export function CreateFund() {
   return defaultDeployment ? (
     <Wizard />
@@ -69,6 +71,8 @@ function Wizard() {
     }
   });
   const [previewTime] = useState(() => Date.now());
+  const [imagePending, setImagePending] = useState(false);
+  const [imagesPublished, setImagesPublished] = useState(false);
   const [step, setStep] = useState(0),
     [error, setError] = useState<unknown>();
   const { t } = useLanguage(),
@@ -108,6 +112,7 @@ function Wizard() {
       onChange={change(key)}
       help={help}
       multiline={multiline}
+      disabled={key === "metadataURI" && imagePending}
       inputMode={
         ["goal", "days", "threshold", "minimum"].includes(key)
           ? key === "goal"
@@ -257,6 +262,20 @@ function Wizard() {
                   "ເງື່ອນໄຂນີ້ຈະປ່ຽນບໍ່ໄດ້ຫຼັງສ້າງກອງທຶນ. ກະລຸນາເກັບສຳເນົາໄວ້ນຳ.",
                   true,
                 )}
+                <FundImageManager
+                  metadataURI={draft.metadataURI}
+                  disabled={tx.busy}
+                  onPendingChange={setImagePending}
+                  onPublished={(uri) => {
+                    setDraft((old) => ({ ...old, metadataURI: uri }));
+                    setImagesPublished(true);
+                  }}
+                />
+                {imagesPublished ? (
+                  <Notice title="ອັບໂຫຼດຮູບພາບແລ້ວ">
+                    ຮູບພາບຈະເຜີຍແຜ່ຫຼັງສ້າງກອງທຶນສຳເລັດ.
+                  </Notice>
+                ) : null}
                 <Disclosure
                   key={String(
                     !!(
@@ -394,6 +413,11 @@ function Wizard() {
             ) : null}
             {step === 4 ? (
               <>
+                <FundVisualStory
+                  uri={draft.metadataURI}
+                  title={draft.title}
+                  summary={draft.summary}
+                />
                 <Notice title="ເງື່ອນໄຂການເງິນຖາວອນ">
                   {" "}
                   ເປົ້າໝາຍ ໄລຍະເວລາ ນະໂຍບາຍຄືນເງິນ ຈຳນວນອະນຸມັດຂັ້ນຕ່ຳ
@@ -464,7 +488,7 @@ function Wizard() {
             {t("back")}
           </Button>
           {step < 4 ? (
-            <Button onClick={next}>
+            <Button onClick={next} disabled={imagePending}>
               {t("next")}
               <ArrowRight data-icon="inline-end" aria-hidden="true" />
             </Button>
@@ -483,6 +507,11 @@ function Wizard() {
             </Button>
           )}
         </div>
+        {imagePending ? (
+          <p className="mt-3 text-sm text-muted-foreground" role="status">
+            ກະລຸນາອັບໂຫຼດຮູບພາບ ຫຼືຍົກເລີກການແກ້ໄຂຮູບກ່ອນໄປຕໍ່.
+          </p>
+        ) : null}
       </Panel>
       <TxFeedback state={tx.state} d={d} />
     </div>

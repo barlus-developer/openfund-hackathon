@@ -42,6 +42,11 @@ const CreateFund = lazy(() =>
 const Manage = lazy(() =>
   import("./features/governance/Manage").then((m) => ({ default: m.Manage })),
 );
+const FundSettings = lazy(() =>
+  import("./features/funds/FundSettings").then((m) => ({
+    default: m.FundSettings,
+  })),
+);
 const Reports = lazy(() =>
   import("./features/reports/Reports").then((m) => ({ default: m.Reports })),
 );
@@ -163,10 +168,7 @@ export function App({ walletConfig = config }: { walletConfig?: Config }) {
                       path="spending"
                       element={<Manage key="spending" />}
                     />
-                    <Route
-                      path="settings"
-                      element={<Manage key="settings" settingsOnly />}
-                    />
+                    <Route path="settings" element={<FundSettings />} />
                   </Route>
                   <Route
                     path="*"

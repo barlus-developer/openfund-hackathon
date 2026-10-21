@@ -1,17 +1,17 @@
 # Verification
 
-This records development checks actually executed in this repository; it is not an independent audit.
+This records development checks actually executed in this repository; it is not an independent audit. The 2026-10-21 feature and Manage audit is documented in [FEATURE_AUDIT.md](FEATURE_AUDIT.md).
 
 | Command                  | Result                                                                       |
 | ------------------------ | ---------------------------------------------------------------------------- |
 | `npm run contracts:test` | 33 tests passed: 28 deterministic/fuzz cases plus 5 stateful invariants      |
-| `npm test`               | 65 client tests passed across 11 files                                       |
+| `npm test`               | 111 client tests passed across 17 files                                      |
 | `npm run test:scripts`   | 8 configuration/deployment cases passed (also executed directly with Node)   |
 | `npm run typecheck`      | Strict TypeScript passed                                                     |
 | `npm run lint`           | ESLint passed                                                                |
 | `npm run build`          | Vite production build passed                                                 |
 | `npm run local:verify`   | Receipt/runtime importer check plus 14 mined transactions; snapshot restored |
-| `npm run e2e`            | 4 Chromium browser tests passed against seeded Anvil                         |
+| `npm run e2e`            | 14 Chromium browser scenarios passed against seeded Anvil                    |
 | `npm audit`              | Zero known dependency advisories after compatible uuid override              |
 
 Contract fuzzing runs 256 amount cases. Stateful invariants run 128 sequences × 64 calls per invariant (8,192 calls), across three funds, multiple donors, time warps, governance, payouts, refunds and closure. Assertions cover per-fund/global accounting, token solvency, double execution/refunds, cross-fund spending, unauthorized withdrawal and donations outside funding states.
@@ -26,7 +26,9 @@ Deployment utility tests reject wrong-chain/failed-create/unprotected/mismatched
 
 Browser tests use `app/e2e.html` with an injected **test-only** EIP-1193 provider. It forwards actual transactions to unlocked loopback Anvil accounts, without private keys in the browser or fabricated hashes. This entry is excluded from the Vite production build. Tests cover public and manager routes, legacy redirects, mobile navigation/overflow in portrait and landscape, reduced motion, homepage search, inline validation and keyboard error recovery, real creation/metadata editing/donation/tracking/approval/payout/report/closure and original-donor refunds. They **do not automate or certify the MetaMask extension or a physical mobile wallet**.
 
-Each integration/browser test restores an Anvil snapshot. Receipts existed and succeeded during execution, but are not canonical history after restoration. Seed receipts remain in `.local/seed-receipts.json` for the running demo. Snapshot-test hashes are explicitly marked reverted in `.local/verification-receipts.json`.
+Each integration/browser transaction test restores an Anvil snapshot through the shared `e2e/fixtures.ts` fixture. Read-only motion tests do not mutate the chain. The suite includes external-event polling, deadline transitions, two-wallet recovery, allowlist removal/restoration, wallet transfers, RPC outage/retry, and axe WCAG A/AA scans.
+
+Each integration/browser transaction test restores an Anvil snapshot. Receipts existed and succeeded during execution, but are not canonical history after restoration. Seed receipts remain in `.local/seed-receipts.json` for the running demo. Snapshot-test hashes are explicitly marked reverted in `.local/verification-receipts.json`.
 
 Static verification commands:
 

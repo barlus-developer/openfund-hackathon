@@ -1,335 +1,189 @@
-import {
-  ListChecks,
-  Send,
-  Save,
-  UserRoundCog,
-  UserRoundPlus,
-  UserRoundMinus,
-  UserRoundCheck,
-  UserRoundX,
-  Archive,
-} from "lucide-react";
-import { Disclosure } from "@/components/patterns";
-import { useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useConnection } from "wagmi";
-import { encodeFunctionData, getAddress, zeroAddress, zeroHash } from "viem";
-import { useFundContext } from "@/features/funds/FundLayout";
-import { useTransaction } from "@/hooks/useTransaction";
-import { openFundAbi } from "@/web3/generated/OpenFund";
-import { actionLabels } from "@/app/labels";
-import { actionNames } from "@/web3/reads";
-import { clientFor } from "@/web3/deployments";
-import { amount, formatOfl } from "@/lib/amount";
-import { walletAddress } from "@/features/funds/creation";
 import {
-  Panel,
-  Notice,
-  TextField,
-  SelectField,
-  ErrorNotice,
-  TxFeedback,
-} from "@/components/common";
-import { FieldGroup } from "@/components/ui/field";
-import { Button } from "@/components/ui/button";
-import { Connect } from "@/features/wallet/Connect";
-import { ClosureFinalize } from "@/features/funds/FundOverview";
-import { useLanguage } from "@/app/i18n";
-const proposalIcons = [
   Send,
-  UserRoundCog,
-  UserRoundPlus,
-  UserRoundMinus,
-  ListChecks,
+  Users,
   UserRoundCheck,
-  UserRoundX,
   Archive,
-] as const;
+  ListChecks,
+  Banknote,
+  Settings,
+} from "lucide-react";
+import { useFundContext } from "@/features/funds/FundLayout";
+import { ClosureFinalize } from "@/features/funds/FundOverview";
+import { Connect } from "@/features/wallet/Connect";
+import { Panel, Notice } from "@/components/common";
+import { buttonVariants } from "@/components/ui/button";
+import { formatOfl } from "@/lib/amount";
+import { managerFundPath } from "@/web3/deployments";
+import { ProposalComposer } from "./ProposalComposer";
+import { Recipients } from "./Recipients";
+import { FundStatusNotice } from "@/features/funds/FundStatusNotice";
+import {
+  availableActions,
+  fundRoles,
+  proposalSections,
+  type ProposalSection,
+} from "./proposal";
 
-export function Manage({ settingsOnly = false }: { settingsOnly?: boolean }) {
-  const { d, row } = useFundContext(),
-    c = useConnection(),
-    { t } = useLanguage(),
-    tx = useTransaction(d);
-  const [kind, setKind] = useState("0"),
-    [target, setTarget] = useState(""),
-    [sum, setSum] = useState(""),
-    [value, setValue] = useState(""),
-    [purpose, setPurpose] = useState(""),
-    [uri, setURI] = useState(""),
-    [hash, setHash] = useState(""),
-    [metadata, setMetadata] = useState(row.fund.metadataURI),
-    [error, setError] = useState<unknown>();
-  const manager = c.address?.toLowerCase() === row.fund.manager.toLowerCase(),
-    approver = row.approvers.some(
-      (a) => a.toLowerCase() === c.address?.toLowerCase(),
-    );
-  const options = actionNames
-    .map((n, i) => [String(i), n] as [string, string])
-    .filter(
-      ([, n]) =>
-        manager ||
-        (approver &&
-          [
-            "CHANGE_MANAGER",
-            "ADD_APPROVER",
-            "REMOVE_APPROVER",
-            "CHANGE_THRESHOLD",
-          ].includes(n)),
-    )
-    .filter(
-      ([i]) =>
-        ![2, 4].includes(row.status) &&
-        (![5, 6].includes(+i) || row.fund.config.recipientPolicy === 1) &&
-        (+i !== 7 || row.status === 1) &&
-        (+i !== 0 || [1, 3].includes(row.status)),
-    );
-  const selectedKind = options.some(([i]) => i === kind)
-    ? kind
-    : options[0]?.[0] || "0";
-  async function propose() {
-    setError(undefined);
-    try {
-      const k = Number(selectedKind);
-      if (!manager && !(approver && [1, 2, 3, 4].includes(k)))
-        throw Error("Only current manager, or approvers for recovery actions.");
-      if (hash && !/^0x[0-9a-fA-F]{64}$/.test(hash))
-        throw Error("Evidence hash must be a 32-byte keccak256 digest.");
-      if ([4, 7].includes(k) === false) walletAddress.parse(target);
-      const a = {
-        kind: k,
-        target: [4, 7].includes(k) ? zeroAddress : getAddress(target),
-        amount: k === 0 ? amount(sum) : 0n,
-        value: k === 4 ? Number(value) : 0,
-        purpose,
-        evidenceURI: uri,
-        evidenceHash: (hash || zeroHash) as `0x${string}`,
-      };
-      if (
-        k === 4 &&
-        (!/^\d+$/.test(value) ||
-          Number(value) < row.fund.config.minimumApprovalThreshold ||
-          Number(value) > row.approvers.length)
-      )
-        throw Error("Invalid threshold.");
-      if (k === 0) {
-        if (a.amount > row.fund.balance)
-          throw Error("Payout exceeds the current balance.");
-        if (!purpose) throw Error("Purpose is required.");
-        const allowed = await clientFor(d).readContract({
-          address: d.openFundAddress,
-          abi: openFundAbi,
-          functionName: "isAllowedRecipient",
-          args: [row.id, a.target],
-        });
-        if (!allowed)
-          throw Error(
-            "Recipient is not eligible under current fund/token rules.",
-          );
-      }
-      await tx.send(
-        d.openFundAddress,
-        encodeFunctionData({
-          abi: openFundAbi,
-          functionName: "createProposal",
-          args: [row.id, a],
-        }),
-      );
-    } catch (e) {
-      setError(e);
-    }
-  }
+const icons = {
+  payout: Send,
+  team: Users,
+  recipients: UserRoundCheck,
+  closure: Archive,
+};
+export function Manage() {
+  const { d, row } = useFundContext();
+  const c = useConnection();
+  const [params] = useSearchParams();
+  const roles = fundRoles(row, c.address);
+  const actions = availableActions(row, c.address);
+  const sections = proposalSections.filter(
+    (s) => s.id !== "recipients" || row.fund.config.recipientPolicy === 1,
+  );
+  const requested = params.get("section");
+  const defaultSection: ProposalSection = [2, 4].includes(row.status)
+    ? "closure"
+    : actions.includes(0)
+      ? "payout"
+      : "team";
+  const section =
+    sections.find((s) => s.id === (requested || defaultSection)) ??
+    sections.find((s) => s.id === defaultSection)!;
+  const kinds = actions.filter((k) =>
+    (section.kinds as readonly number[]).includes(k),
+  );
+  const root = managerFundPath(d, row.id);
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
-      {!settingsOnly ? (
-        <div className="flex min-w-0 flex-col gap-6">
-          <Panel title="ສະເໜີການດຳເນີນງານ">
-            <FieldGroup>
-              {!c.address || c.chainId !== d.chainId ? (
-                <Connect chainId={d.chainId} />
-              ) : null}
-              {!manager && !approver ? (
-                <Notice title="ສິດເບິ່ງຂໍ້ມູນ">
-                  {" "}
-                  ໃຊ້ກະເປົາຜູ້ຈັດການ ຫຼືຜູ້ອະນຸມັດເພື່ອສົ່ງຂໍ້ສະເໜີ.{" "}
-                </Notice>
-              ) : null}
-              {manager || approver ? (
-                <>
-                  <SelectField
-                    icon={proposalIcons[Number(selectedKind)] ?? ListChecks}
-                    label="ສິ່ງທີ່ຕ້ອງການສະເໜີ"
-                    value={selectedKind}
-                    onChange={setKind}
-                    options={
-                      options.length
-                        ? options.map(
-                            ([value]) =>
-                              [value, actionLabels[Number(value)]] as [
-                                string,
-                                string,
-                              ],
-                          )
-                        : [["0", "ຈ່າຍເງິນ (ສຳລັບຜູ້ຈັດການ)"]]
-                    }
-                  />
-                  {![4, 7].includes(+selectedKind) ? (
-                    <TextField
-                      label={
-                        +selectedKind === 0
-                          ? t("recipient")
-                          : "ທີ່ຢູ່ກະເປົາທີ່ກ່ຽວຂ້ອງ"
-                      }
-                      value={target}
-                      onChange={setTarget}
-                    />
-                  ) : null}
-                  {+selectedKind === 0 ? (
-                    <TextField
-                      label={t("amount")}
-                      value={sum}
-                      onChange={setSum}
-                    />
-                  ) : null}
-                  {+selectedKind === 4 ? (
-                    <TextField
-                      label="ຈຳນວນອະນຸມັດໃໝ່"
-                      value={value}
-                      onChange={setValue}
-                    />
-                  ) : null}
-                  <TextField
-                    label={t("purpose")}
-                    value={purpose}
-                    onChange={setPurpose}
-                    multiline
-                  />
-                  <TextField
-                    label="ລິ້ງຫຼັກຖານ (ຖ້າມີ)"
-                    value={uri}
-                    onChange={setURI}
-                  />
-                  <Disclosure title="ລະຫັດຢືນຢັນຫຼັກຖານ (ຖ້າມີ)">
-                    <TextField
-                      label="ລະຫັດຢືນຢັນຫຼັກຖານ (ຖ້າມີ)"
-                      value={hash}
-                      onChange={setHash}
-                    />
-                  </Disclosure>
-                  <Notice title="ກວດສອບກ່ອນສົ່ງ">
-                    <dl className="data-list">
-                      <dt>ລາຍການ</dt>
-                      <dd>{actionLabels[+selectedKind]}</dd>
-                      {![4, 7].includes(+selectedKind) && target ? (
-                        <>
-                          <dt>ກະເປົາ</dt>
-                          <dd>
-                            <code>{target}</code>
-                          </dd>
-                        </>
-                      ) : null}
-                      {+selectedKind === 0 ? (
-                        <>
-                          <dt>ຈຳນວນ</dt>
-                          <dd>{sum || "0"} OFL</dd>
-                        </>
-                      ) : null}
-                      {+selectedKind === 4 ? (
-                        <>
-                          <dt>ຈຳນວນອະນຸມັດໃໝ່</dt>
-                          <dd>{value || "—"}</dd>
-                        </>
-                      ) : null}
-                    </dl>
-                    <p>
-                      {" "}
-                      ຍອດຄົງເຫຼືອລ່າສຸດ {formatOfl(row.fund.balance)} OFL.
-                      ຈຳນວນອະນຸມັດ {row.fund.threshold}/{row.approvers.length}.{" "}
-                      {+selectedKind === 0
-                        ? "ການສະເໜີບໍ່ໄດ້ຈອງຍອດເງິນໄວ້."
-                        : "ລໍຖ້າ 24 ຊົ່ວໂມງຫຼັງອະນຸມັດຄົບ."}
-                    </p>
-                    {+selectedKind === 7 ? (
-                      <p>
-                        {" "}
-                        ການເລີ່ມປິດຈະຢຸດຮັບສະໜັບສະໜູນຖາວອນ
-                        ແລະຍົກເລີກຂໍ້ສະເໜີເດີມ.
-                        ການຈ່າຍເງິນທີ່ເຫຼືອຕ້ອງອະນຸມັດຕ່າງຫາກ.{" "}
-                      </p>
-                    ) : null}
-                  </Notice>
-                </>
-              ) : null}
-              <ErrorNotice error={error} />
-              <Button
-                disabled={
-                  (!manager && !approver) ||
-                  tx.busy ||
-                  c.chainId !== d.chainId ||
-                  row.status === 2 ||
-                  row.status === 4
-                }
-                onClick={propose}
-              >
-                <Send data-icon="inline-start" aria-hidden="true" />{" "}
-                ສົ່ງຂໍ້ສະເໜີ{" "}
-              </Button>
-              <TxFeedback state={tx.state} d={d} />
-            </FieldGroup>
-          </Panel>
-          <ClosureFinalize />
+    <div className="flex min-w-0 flex-col gap-6">
+      <Panel title="ຈັດການກອງທຶນ">
+        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div>
+            <dt className="text-muted-foreground">ຍອດຄົງເຫຼືອ</dt>
+            <dd className="mt-1 break-words text-lg font-semibold">
+              {formatOfl(row.fund.balance)} OFL
+            </dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">ການອະນຸມັດ</dt>
+            <dd className="mt-1 text-lg font-semibold">
+              {row.fund.threshold} / {row.approvers.length} ຄົນ
+            </dd>
+          </div>
+          <div className="col-span-2 sm:col-span-1">
+            <dt className="text-muted-foreground">ສິດຂອງກະເປົານີ້</dt>
+            <dd className="mt-1 font-medium">
+              {roles.manager && roles.approver
+                ? "ຜູ້ຈັດການ ແລະຜູ້ອະນຸມັດ"
+                : roles.manager
+                  ? "ຜູ້ຈັດການ"
+                  : roles.approver
+                    ? "ຜູ້ອະນຸມັດ"
+                    : "ສິດເບິ່ງຂໍ້ມູນ"}
+            </dd>
+          </div>
+        </dl>
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+          <Link
+            className="inline-flex min-h-11 items-center gap-2 text-primary hover:underline"
+            to={`${root}/proposals`}
+          >
+            <ListChecks className="size-4" aria-hidden="true" />
+            ກວດຂໍ້ສະເໜີ
+          </Link>
+          <Link
+            className="inline-flex min-h-11 items-center gap-2 text-primary hover:underline"
+            to={`${root}/payouts`}
+          >
+            <Banknote className="size-4" aria-hidden="true" />
+            ປະຫວັດການຈ່າຍ
+          </Link>
+          <Link
+            className="inline-flex min-h-11 items-center gap-2 text-primary hover:underline"
+            to={`${root}/settings`}
+          >
+            <Settings className="size-4" aria-hidden="true" />
+            ຮູບພາບ ແລະຂໍ້ມູນ
+          </Link>
         </div>
+      </Panel>
+      <FundStatusNotice />
+      {!c.address || c.chainId !== d.chainId ? (
+        <Connect chainId={d.chainId} />
       ) : null}
-      {settingsOnly ? (
-        <div className="flex min-w-0 flex-col gap-6">
-          <Panel title="ຕັ້ງຄ່າກອງທຶນ">
-            <FieldGroup>
-              {!manager ? (
-                <Notice title="ສິດເບິ່ງຂໍ້ມູນ">
-                  ໃຊ້ກະເປົາຜູ້ຈັດການເພື່ອແກ້ໄຂຂໍ້ມູນກອງທຶນ.
-                </Notice>
-              ) : null}
-              <TextField
-                label="ລິ້ງຂໍ້ມູນເພີ່ມເຕີມ"
-                value={metadata}
-                onChange={setMetadata}
-              />
-              <Button
-                variant="outline"
-                disabled={
-                  !manager ||
-                  tx.busy ||
-                  c.chainId !== d.chainId ||
-                  row.status === 4
-                }
-                onClick={() =>
-                  tx.send(
-                    d.openFundAddress,
-                    encodeFunctionData({
-                      abi: openFundAbi,
-                      functionName: "updateMetadata",
-                      args: [row.id, metadata, zeroHash],
-                    }),
-                  )
-                }
-              >
-                <Save data-icon="inline-start" aria-hidden="true" />{" "}
-                ບັນທຶກລິ້ງຂໍ້ມູນ{" "}
-              </Button>
-              <small>
-                {" "}
-                ການອັບເດດລິ້ງບໍ່ປ່ຽນເງື່ອນໄຂການເງິນ ຫຼືຈຸດປະສົງ.
-                ລິ້ງທີ່ບໍ່ມີລະຫັດຢືນຢັນໄຟລ໌ຈະກວດການປ່ຽນແປງເນື້ອຫາບໍ່ໄດ້.{" "}
-              </small>
-            </FieldGroup>
-            <TxFeedback state={tx.state} d={d} />
-          </Panel>
-          <Notice title="ການຈ່າຍເງິນຕ້ອງຜ່ານການອະນຸມັດ">
-            {" "}
-            ຜູ້ຈັດການສະເໜີ ຜູ້ອະນຸມັດຮ່ວມຕັດສິນໃຈ ແລ້ວຈຶ່ງດຳເນີນການໄດ້.
-            ບໍ່ມີຜູ້ໃດສາມາດຖອນເງິນໂດຍຂ້າມເງື່ອນໄຂ.{" "}
+      <nav
+        aria-label="ວຽກຈັດການກອງທຶນ"
+        className="grid grid-cols-2 gap-2 xl:grid-cols-4"
+      >
+        {sections.map(({ id, label }) => {
+          const Icon = icons[id];
+          const query = new URLSearchParams(params);
+          query.set("section", id);
+          return (
+            <Link
+              key={id}
+              to={`?${query}`}
+              aria-current={section.id === id ? "page" : undefined}
+              className={buttonVariants({
+                variant: section.id === id ? "secondary" : "outline",
+                className:
+                  "h-auto min-h-12 justify-start whitespace-normal text-left",
+              })}
+            >
+              <Icon data-icon="inline-start" aria-hidden="true" />
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+        {section.id === "team" ? (
+          <Notice title="ຜູ້ຈັດການ ແລະຜູ້ອະນຸມັດ">
+            <p>
+              ຜູ້ອະນຸມັດປັດຈຸບັນສາມາດສະເໜີປ່ຽນທີມໄດ້.
+              ຍັງຕ້ອງຜ່ານຈຳນວນອະນຸມັດເດີມ ແລະລໍຖ້າ 24 ຊົ່ວໂມງ.
+            </p>
+            <Link className="text-primary underline" to={`${root}/governance`}>
+              ເບິ່ງຜູ້ຈັດການ ແລະລາຍຊື່ຜູ້ອະນຸມັດປັດຈຸບັນ
+            </Link>
           </Notice>
-        </div>
-      ) : null}
+        ) : null}
+        {section.id === "recipients" ? (
+          <Notice title="ລາຍຊື່ຜູ້ຮັບທີ່ອະນຸຍາດ">
+            ກອງທຶນນີ້ຈ່າຍໃຫ້ສະເພາະກະເປົາໃນລາຍຊື່. ການປ່ຽນລາຍຊື່ຕ້ອງອະນຸມັດ
+            ແລະຈະຍົກເລີກຂໍ້ສະເໜີຈ່າຍເງິນເກົ່າ.
+          </Notice>
+        ) : null}
+        {section.id === "closure" ? (
+          <Notice title="ກວດສອບກ່ອນປິດກອງທຶນ">
+            <p>
+              ການເລີ່ມປິດຈະຢຸດຮັບສະໜັບສະໜູນຖາວອນ ແລະຍົກເລີກຂໍ້ສະເໜີເດີມ.
+              ການຈ່າຍເງິນທີ່ເຫຼືອຕ້ອງອະນຸມັດຕ່າງຫາກ.
+            </p>
+            <p>
+              1. ສະເໜີ ແລະອະນຸມັດເລີ່ມປິດ · 2. ຈ່າຍຍອດຄົງເຫຼືອຕາມກົດ · 3.
+              ປິດຖາວອນເມື່ອຍອດເປັນສູນ.
+            </p>
+          </Notice>
+        ) : null}
+        {kinds.length ? (
+          <ProposalComposer key={`${section.id}:${c.address}`} kinds={kinds} />
+        ) : (
+          <Notice title="ບໍ່ມີການສະເໜີທີ່ໃຊ້ໄດ້ໃນຂະນະນີ້">
+            {row.status === 4
+              ? "ກອງທຶນປິດແລ້ວ. ປະຫວັດ ແລະລາຍງານຍັງເບິ່ງໄດ້."
+              : row.status === 2
+                ? "ຜູ້ສະໜັບສະໜູນຮັບເງິນຄືນເອງໄດ້. ບໍ່ສາມາດສະເໜີຈ່າຍເງິນ ຫຼືປ່ຽນທີມ."
+                : !roles.manager && !roles.approver
+                  ? "ໃຊ້ກະເປົາຜູ້ຈັດການ ຫຼືຜູ້ອະນຸມັດເພື່ອສົ່ງຂໍ້ສະເໜີ."
+                  : section.id === "payout"
+                    ? "ຈ່າຍເງິນໄດ້ເມື່ອກອງທຶນພ້ອມຈ່າຍ ຫຼືກຳລັງປິດ; ສະເພາະຜູ້ຈັດການເປັນຜູ້ສະເໜີ."
+                    : "ວຽກນີ້ບໍ່ພ້ອມສຳລັບສິດ ຫຼືສະຖານະກອງທຶນປັດຈຸບັນ."}
+          </Notice>
+        )}
+        {section.id === "recipients" ? <Recipients /> : null}
+        {section.id === "closure" ? <ClosureFinalize /> : null}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,15 @@
 import { HandHeart, Undo2, Archive } from "lucide-react";
 import { Disclosure, Stat } from "@/components/patterns";
 import { useConnection } from "wagmi";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { encodeFunctionData } from "viem";
 import {
@@ -19,6 +28,7 @@ import { formatOfl, date } from "@/lib/amount";
 import { clientFor, fundPath } from "@/web3/deployments";
 import { openFundAbi } from "@/web3/generated/OpenFund";
 import { useTransaction } from "@/hooks/useTransaction";
+import { FundVisualStory } from "./FundImages";
 export function FundOverview() {
   const { d, row } = useFundContext(),
     { t } = useLanguage();
@@ -31,7 +41,12 @@ export function FundOverview() {
         className="flex min-w-0 flex-col gap-3 lg:col-start-1 lg:row-start-1"
         aria-label="ກ່ຽວກັບກອງທຶນ"
       >
-        <p className="whitespace-pre-wrap text-base leading-8">{f.summary}</p>
+        <FundVisualStory
+          uri={f.metadataURI}
+          hash={f.metadataHash}
+          title={f.title}
+          summary={f.summary}
+        />
       </section>
       <div className="flex min-w-0 flex-col gap-8 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-8">
         <Panel title="ຍອດສະໜັບສະໜູນ">
@@ -166,6 +181,7 @@ export function RefundClaim() {
   const q = useQuery({
     queryKey: ["refund", d.version, row.id.toString(), c.address],
     enabled: !!c.address,
+    refetchInterval: 10000,
     queryFn: () =>
       clientFor(d).readContract({
         address: d.openFundAddress,
@@ -210,6 +226,7 @@ export function ClosureFinalize() {
   const { d, row } = useFundContext(),
     c = useConnection(),
     tx = useTransaction(d);
+  const [confirm, setConfirm] = useState(false);
   if (row.status !== 2 && row.status !== 3) return null;
   return (
     <Panel title="ຢືນຢັນປິດກອງທຶນ">
@@ -222,16 +239,7 @@ export function ClosureFinalize() {
         {row.fund.balance === 0n ? (
           <Button
             disabled={!c.address || tx.busy || c.chainId !== d.chainId}
-            onClick={() =>
-              tx.send(
-                d.openFundAddress,
-                encodeFunctionData({
-                  abi: openFundAbi,
-                  functionName: "finalizeClose",
-                  args: [row.id],
-                }),
-              )
-            }
+            onClick={() => setConfirm(true)}
           >
             <Archive data-icon="inline-start" aria-hidden="true" />{" "}
             ປິດກອງທຶນຖາວອນ{" "}
@@ -244,6 +252,41 @@ export function ClosureFinalize() {
           </small>
         )}
         <TxFeedback state={tx.state} d={d} />
+        <Dialog open={confirm} onOpenChange={setConfirm}>
+          <DialogContent>
+            <DialogTitle>ຢືນຢັນປິດກອງທຶນຖາວອນ</DialogTitle>
+            <DialogDescription>
+              ກອງທຶນຈະປິດຖາວອນ ແລະບໍ່ສາມາດເປີດຄືນ.
+              ກະລຸນາກວດສອບໃນກະເປົາກ່ອນຢືນຢັນ.
+            </DialogDescription>
+            <DialogFooter>
+              <DialogClose render={<Button variant="outline" />}>
+                ກັບຄືນ
+              </DialogClose>
+              <Button
+                disabled={
+                  tx.busy ||
+                  !c.address ||
+                  c.chainId !== d.chainId ||
+                  row.fund.balance !== 0n
+                }
+                onClick={async () => {
+                  const receipt = await tx.send(
+                    d.openFundAddress,
+                    encodeFunctionData({
+                      abi: openFundAbi,
+                      functionName: "finalizeClose",
+                      args: [row.id],
+                    }),
+                  );
+                  if (receipt) setConfirm(false);
+                }}
+              >
+                ຢືນຢັນປິດຖາວອນ
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Panel>
   );

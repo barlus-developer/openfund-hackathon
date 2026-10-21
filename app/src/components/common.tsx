@@ -159,6 +159,7 @@ export function TextField({
   inputMode,
   id: providedId,
   error,
+  disabled,
 }: {
   label: string;
   value: string;
@@ -170,6 +171,7 @@ export function TextField({
   inputMode?: "decimal" | "numeric";
   id?: string;
   error?: string;
+  disabled?: boolean;
 }) {
   const generatedId = useId();
   const id = providedId ?? generatedId;
@@ -178,10 +180,11 @@ export function TextField({
       .filter(Boolean)
       .join(" ") || undefined;
   return (
-    <Field data-invalid={!!error}>
+    <Field data-invalid={!!error} data-disabled={disabled}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       {multiline ? (
         <Textarea
+          disabled={disabled}
           id={id}
           aria-describedby={describedBy}
           aria-invalid={!!error}
@@ -191,6 +194,7 @@ export function TextField({
         />
       ) : (
         <Input
+          disabled={disabled}
           id={id}
           aria-describedby={describedBy}
           aria-invalid={!!error}

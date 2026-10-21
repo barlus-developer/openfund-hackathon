@@ -33,11 +33,7 @@ const navigation = [
 ];
 export function Brand() {
   return (
-    <Link
-      to="/"
-      aria-label="OpenFund · ໜ້າຫຼັກ"
-      className="flex shrink-0 items-center gap-2.5"
-    >
+    <Link to="/" title="ໜ້າຫຼັກ" className="flex shrink-0 items-center gap-2.5">
       <HeartHandshake className="size-8 text-primary" aria-hidden="true" />
       <span className="flex flex-col">
         <span className="text-xl font-bold tracking-tight">OpenFund</span>

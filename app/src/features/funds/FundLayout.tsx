@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   Send,
   ListChecks,
-  Users,
   ArrowLeftRight,
   Banknote,
   FileText,
@@ -92,10 +91,8 @@ function LoadFund({
         { tab: "", label: "ພາບລວມ", icon: LayoutDashboard },
         { tab: "spending", label: "ຈັດການກອງທຶນ", icon: Send },
         { tab: "proposals", label: "ຂໍ້ສະເໜີ", icon: ListChecks },
-        { tab: "governance", label: "ຜູ້ອະນຸມັດ", icon: Users },
-        { tab: "transactions", label: "ປະຫວັດ", icon: ArrowLeftRight },
-        { tab: "payouts", label: "ການຈ່າຍເງິນ", icon: Banknote },
         { tab: "reports", label: "ລາຍງານ", icon: FileText },
+        { tab: "transactions", label: "ປະຫວັດ", icon: ArrowLeftRight },
         { tab: "settings", label: "ຕັ້ງຄ່າ", icon: Settings },
       ]
     : [

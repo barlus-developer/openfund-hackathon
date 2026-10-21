@@ -1,14 +1,26 @@
 import { Link } from "react-router-dom";
-import { Send, ListChecks, ArrowLeftRight, FileText } from "lucide-react";
+import { useConnection } from "wagmi";
+import {
+  Send,
+  ListChecks,
+  ArrowLeftRight,
+  FileText,
+  Images,
+} from "lucide-react";
 import { Stat } from "@/components/patterns";
 import { FundProgress } from "./FundCard";
 import { useFundContext } from "./FundLayout";
 import { formatOfl, date } from "@/lib/amount";
 import { managerFundPath } from "@/web3/deployments";
 import { buttonVariants } from "@/components/ui/button";
+import { FundStatusNotice } from "./FundStatusNotice";
+import { availableActions, fundRoles } from "@/features/governance/proposal";
 
 export function ManagerFundOverview() {
   const { d, row } = useFundContext();
+  const { address } = useConnection();
+  const roles = fundRoles(row, address);
+  const actions = availableActions(row, address);
   const f = row.fund;
   const root = managerFundPath(d, row.id);
   return (
@@ -16,6 +28,7 @@ export function ManagerFundOverview() {
       <p className="max-w-3xl whitespace-pre-wrap text-muted-foreground">
         {f.summary}
       </p>
+      <FundStatusNotice />
       <div className="grid grid-cols-2 gap-6 border-y py-5 xl:grid-cols-4">
         {[
           ["ລະດົມທຶນແລ້ວ", f.totalRaised],
@@ -65,8 +78,16 @@ export function ManagerFundOverview() {
           </h2>
           {[
             {
-              path: "spending",
-              label: "ສະເໜີຈ່າຍເງິນ ຫຼືປ່ຽນແປງກອງທຶນ",
+              path: actions.includes(0)
+                ? "spending?section=payout"
+                : [2, 3, 4].includes(row.status)
+                  ? "spending?section=closure"
+                  : "spending?section=team",
+              label: actions.includes(0)
+                ? "ສະເໜີຈ່າຍເງິນ"
+                : [2, 3, 4].includes(row.status)
+                  ? "ກວດສອບການປິດກອງທຶນ"
+                  : "ຜູ້ຈັດການ ແລະຜູ້ອະນຸມັດ",
               icon: Send,
             },
             {
@@ -84,20 +105,30 @@ export function ManagerFundOverview() {
               label: "ເຜີຍແຜ່ລາຍງານຄວາມຄືບໜ້າ",
               icon: FileText,
             },
-          ].map(({ path, label, icon: Icon }) => (
-            <Link
-              key={path}
-              to={`${root}/${path}`}
-              className={buttonVariants({
-                variant: "outline",
-                className:
-                  "h-auto min-h-12 justify-start whitespace-normal text-left",
-              })}
-            >
-              <Icon data-icon="inline-start" aria-hidden="true" />
-              {label}
-            </Link>
-          ))}
+            {
+              path: "settings",
+              label: "ຈັດການຮູບພາບ ແລະຂໍ້ມູນກອງທຶນ",
+              icon: Images,
+            },
+          ]
+            .filter(
+              ({ path }) =>
+                path !== "settings" || (roles.manager && row.status !== 4),
+            )
+            .map(({ path, label, icon: Icon }) => (
+              <Link
+                key={path}
+                to={`${root}/${path}`}
+                className={buttonVariants({
+                  variant: "outline",
+                  className:
+                    "h-auto min-h-12 justify-start whitespace-normal text-left",
+                })}
+              >
+                <Icon data-icon="inline-start" aria-hidden="true" />
+                {label}
+              </Link>
+            ))}
         </section>
       </div>
     </div>

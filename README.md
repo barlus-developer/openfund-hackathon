@@ -62,7 +62,7 @@ Compose builds the static React app in a Node stage and serves its `app/dist` ou
 
 Use `docker compose ps`, `docker compose logs -f`, and `docker compose down` to manage the stack; the corresponding `npm run docker:status`, `npm run docker:logs`, and `npm run docker:down` aliases also work. Start everything again with `docker compose up --build -d --wait`; existing deployments, funds and pinned files are retained, so skip deployment and seeding on subsequent starts. Stop any native Anvil already using port 8545 or Vite using port 5173 before starting Compose. `npm run local` starts its own native Anvil; use the Docker commands above for this workflow.
 
-The app image includes its deployment manifest and public Vite configuration at build time. Rebuild it after changing source, redeploying contracts or changing the public build arguments in `compose.yaml`: `docker compose up --build -d --wait app`. Host `.env` files and host `node_modules` are excluded from the build context. For Vite development with live updates, run `docker compose stop app` to free port 5173, then `npm run dev:docker` on the host.
+The app image includes its deployment manifest and public Vite configuration at build time. Compose reads `VITE_DEFAULT_DEPLOYMENT`, `VITE_RPC_URL`, `VITE_IPFS_API_URL` and `VITE_IPFS_GATEWAY` from the repository root `.env` when set, and otherwise uses local defaults. Rebuild the app after changing source, redeploying contracts or changing those values: `docker compose up --build -d --wait app`. Host `.env` files and host `node_modules` are excluded from the build context. For Vite development with live updates, run `docker compose stop app` to free port 5173, then `npm run dev:docker` on the host.
 
 Blockscout indexes existing and new blocks, transactions, addresses and token transfers from Anvil. The explorer's PostgreSQL and Redis services are internal to Docker. Its first start runs database migrations and can take a few minutes. Anvil's internal-transaction and pending-transaction fetchers are disabled following Blockscout's Anvil configuration; the optional statistics, account and verification microservices are not included. `LOCAL_EXPLORER_URL` adds explorer links to the app and wallet network metadata when generating a deployment manifest. For an already deployed chain, update the metadata without redeploying:
 
@@ -99,7 +99,7 @@ Add a custom network: RPC `http://127.0.0.1:8545`, chain ID **31337**, currency 
 
 Each receives 10,000,000 demo OFL. The issuer has **no special OpenFund authority**; account 0 has fund permissions only because it is explicitly listed in each seed fund.
 
-1. Browse public records without connecting. Switch Lao/English using the header.
+1. Browse public records without connecting. The current interface uses Lao labels.
 2. Connect MetaMask, open Education fund #3, donate using **one** `transferAndCall` transaction, with no approval transaction.
 3. Inspect its pending books payout. Approve from indices 0 and 1, then execute from any wallet.
 4. The manager can publish report references, propose governance changes or start closure. Sensitive actions wait 24 hours; remaining funds require separate approved settlement payouts.
@@ -140,8 +140,10 @@ Public network configuration uses explicit official deployment records with glob
 
 ## Protocol and documentation
 
+- [Feature audit, Manage refactor, and verification limits](docs/FEATURE_AUDIT.md)
 - [Architecture](docs/ARCHITECTURE.md) and [compiled API inventory](docs/CONTRACTS.md)
 - [Funding and governance rules](docs/FUND_RULES.md), [DApp flows](docs/DAPP_FLOWS.md)
+- [Funding image uploads, metadata, and homepage artwork](docs/funding-images.md)
 - [Security model](docs/SECURITY_MODEL.md), [decisions](docs/DECISIONS.md), [limits](docs/LIMITATIONS.md)
 - [Deployment](docs/DEPLOYMENT.md), [remote RPC / real IPFS](docs/DEVELOPMENT_NETWORK.md) and [verification](docs/TESTING.md)
 

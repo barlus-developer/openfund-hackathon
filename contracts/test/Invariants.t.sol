@@ -13,6 +13,7 @@ contract Handler is Test {
     address[3] public donors;
     mapping(uint256 => bool) public executed;
     mapping(uint256 => mapping(address => uint256)) public refunded;
+    mapping(uint256 => mapping(address => uint256)) public donated;
     bool public doubleExecution;
     bool public doubleRefund;
     bool public crossFundSpend;
@@ -39,6 +40,7 @@ contract Handler is Test {
         T.Fund memory f = core.getFund(id);
         vm.prank(donor);
         try token.transferAndCall(address(core), value, abi.encode(id)) {
+            donated[id][donor] += value;
             if (!(beforeStatus == T.FundStatus.FUNDRAISING
                         || (beforeStatus == T.FundStatus.ACTIVE && f.config.fundingMode == T.FundingMode.CONTINUOUS))) {
                 badDonation = true;
@@ -91,11 +93,15 @@ contract Handler is Test {
         uint256 id = seed % 3 + 1;
         address donor = donors[actor % 3];
         uint256 owed = core.getRefundableAmount(id, donor);
-        uint256 raised = core.getFund(id).totalRaised;
+        uint256 beforeBalance = token.balanceOf(donor);
         vm.prank(donor);
         try core.claimRefund(id) {
             refunded[id][donor] += owed;
-            if (owed == 0 || refunded[id][donor] > raised) doubleRefund = true;
+            // Compare against this donor's independently tracked deposits, not the whole fund's raised amount.
+            if (owed == 0 || refunded[id][donor] > donated[id][donor] || token.balanceOf(donor) != beforeBalance + owed)
+            {
+                doubleRefund = true;
+            }
         } catch {}
     }
 

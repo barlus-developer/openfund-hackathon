@@ -32,6 +32,8 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       environment: "jsdom",
+      // Each UI file creates a full DOM; bound workers to keep interaction tests reliable on CI/dev laptops.
+      maxWorkers: 2,
       setupFiles: ["./tests/setup.ts"],
       include: ["tests/**/*.test.{ts,tsx}"],
     },

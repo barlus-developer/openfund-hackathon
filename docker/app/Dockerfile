@@ -3,7 +3,7 @@ WORKDIR /workspace
 
 COPY package.json package-lock.json ./
 COPY app/package.json ./app/package.json
-RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
+RUN --mount=type=cache,target=/root/.npm npm ci --include=optional --no-audit --no-fund
 
 COPY app ./app
 

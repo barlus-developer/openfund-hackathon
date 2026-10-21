@@ -96,7 +96,9 @@ export function useTransaction(d: Deployment) {
         type: "success",
         title: "ຢືນຢັນລາຍການສຳເລັດ",
       });
-      await queryClient.invalidateQueries();
+      // A cache refresh cannot undo a successful mined receipt.
+      // Refresh failures are surfaced by the affected queries with their retry controls.
+      void queryClient.invalidateQueries().catch(() => {});
       return receipt;
     } catch (error) {
       const message = friendlyError(error);
@@ -116,6 +118,9 @@ export function useTransaction(d: Deployment) {
   }
   return {
     send,
+    reset: () => {
+      if (!locked.current) setState({});
+    },
     state,
     busy: [
       "Preparing",
